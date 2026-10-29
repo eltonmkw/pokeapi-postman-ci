@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Validate Agent Skill Spec Compliance",
+      "trigger": "PostFileSave",
+      "matcher": "skills/.*/SKILL.md$",
+      "action": {
+        "type": "agent",
+        "prompt": "A SKILL.md file was saved under skills/. Validate it against the agentskills.io format and report any violation, otherwise confirm the skill is valid. This is a lightweight read-and-check done by you as the agent; do not add a validator script or any new dependency. Check all of the following: (1) the frontmatter is valid YAML delimited by a line containing only --- at the top and a matching --- line that closes it; (2) the frontmatter contains a non-empty name and a non-empty description; (3) the name equals the parent directory name of the saved SKILL.md; (4) name is 1 to 64 characters and uses only lowercase a-z, 0-9, and hyphens, with no leading or trailing hyphen and no consecutive hyphens; (5) description is non-empty and at most 1024 characters, and it states both what the skill does AND when to use it. For any violation, report the specific rule that failed and propose the minimal fix (do not auto-apply it). If all checks pass, confirm the skill is spec-compliant. Keep the check focused on the saved file only."
+      }
+    }
+  ]
+}

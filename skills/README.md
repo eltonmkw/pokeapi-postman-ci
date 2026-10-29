@@ -18,6 +18,24 @@ these skills work with any skills-compatible agent rather than a single vendor.
 - [`triage-flaky-run`](triage-flaky-run/SKILL.md) - triage an intermittent or
   environmental failure without weakening the suite.
 
+## Kiro automation
+
+Three Kiro hooks wire these skills into save-triggered feedback. Each is an
+agent-prompt hook; none runs a script or adds a dependency.
+
+- [`.kiro/hooks/pokeapi-postman-tests.json`](../.kiro/hooks/pokeapi-postman-tests.json) -
+  on a save under `postman/**` or the CI workflow YAML, runs Newman; on a red run
+  it applies [`investigate-failing-assertion`](investigate-failing-assertion/SKILL.md)
+  to classify the failure and propose a minimal fix.
+- [`.kiro/hooks/generate-api-tests.json`](../.kiro/hooks/generate-api-tests.json) -
+  on a save under `docs/scenarios/`, applies
+  [`generate-qa-scenarios`](generate-qa-scenarios/SKILL.md) to build the scenario
+  table and [`write-newman-tests`](write-newman-tests/SKILL.md) to draft
+  assertions for the `Automate: Yes` rows, proposed for review.
+- [`.kiro/hooks/validate-skills.json`](../.kiro/hooks/validate-skills.json) -
+  on a save of any `skills/*/SKILL.md`, validates the file against the
+  agentskills.io format and proposes the minimal fix for any violation.
+
 ## How progressive disclosure works
 
 An agent first sees only each skill's `name` and `description`, which it uses to
