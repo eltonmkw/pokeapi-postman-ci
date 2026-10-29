@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793317789211,
+  "lastUpdate": 1793317915676,
   "repoUrl": "https://github.com/eltonmkw/pokeapi-postman-ci",
   "entries": {
     "PokéAPI collection trend": [
@@ -194,6 +194,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "Avg response time",
             "value": 58,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "eltonmkw@gmail.com",
+            "name": "Elton Mah",
+            "username": "eltonmkw"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0a164f3960b50a8a3976d7024d1cdee2d74c9601",
+          "message": "Merge pull request #8 from eltonmkw/publish-htmlextra-report\n\nPublish htmlextra HTML report to gh-pages root",
+          "timestamp": "2026-10-30T07:51:26+08:00",
+          "tree_id": "7fc4e5b486307a336fcb28c703473c059ae6d459",
+          "url": "https://github.com/eltonmkw/pokeapi-postman-ci/commit/0a164f3960b50a8a3976d7024d1cdee2d74c9601"
+        },
+        "date": 1793317915064,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Failed assertions",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Failed requests",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Avg response time",
+            "value": 65,
             "unit": "ms"
           }
         ]
