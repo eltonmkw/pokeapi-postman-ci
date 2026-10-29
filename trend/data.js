@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793317222609,
+  "lastUpdate": 1793317789211,
   "repoUrl": "https://github.com/eltonmkw/pokeapi-postman-ci",
   "entries": {
     "PokéAPI collection trend": [
@@ -155,6 +155,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "Avg response time",
             "value": 31,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "eltonmkw@gmail.com",
+            "name": "Elton Mah",
+            "username": "eltonmkw"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5ae96fec55d262a179678f7eac79cbe12e004326",
+          "message": "Merge pull request #9 from eltonmkw/add-kiro-skill-hooks\n\nAdd Kiro hooks that wire the Agent Skills into automation",
+          "timestamp": "2026-10-30T07:49:25+08:00",
+          "tree_id": "a46b87f75acd71e6bb9a1030d6dcf7908bdc5bd2",
+          "url": "https://github.com/eltonmkw/pokeapi-postman-ci/commit/5ae96fec55d262a179678f7eac79cbe12e004326"
+        },
+        "date": 1793317788435,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Failed assertions",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Failed requests",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Avg response time",
+            "value": 58,
             "unit": "ms"
           }
         ]
