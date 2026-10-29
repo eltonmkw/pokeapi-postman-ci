@@ -1,0 +1,62 @@
+name: Postman CI
+
+# Run the committed PokéAPI Postman collection against the public PokéAPI.
+# No Postman API key / secret is needed: the collection file runs directly.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# Minimal token permissions: the job only needs to read the repository.
+permissions:
+  contents: read
+
+jobs:
+  run-collection:
+    name: Run PokéAPI collection with Newman
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned by commit SHA (v4.2.2) for reproducibility.
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # Pinned by commit SHA (v4.1.0). Node 22 LTS.
+      - name: Set up Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '22'
+
+      # Pin the exact Newman version so CI is reproducible.
+      # Newman is Postman's officially maintained command-line Collection Runner
+      # and is used here (instead of postman-cli) because it is the tool that
+      # emits JUnit XML + JSON reports, matching the verified local run.
+      - name: Install Newman (pinned)
+        run: npm install -g newman@6.2.3
+
+      # Same command + reporters as the local run. The CLI reporter only writes
+      # to stdout, so stdout is teed into reports/pokeapi.cli.txt to capture the
+      # third report form. 'set -o pipefail' makes the pipeline return Newman's
+      # exit code (not tee's), so any failed request or assertion still fails the
+      # job; the exit code is NOT swallowed.
+      - name: Run collection
+        shell: bash
+        run: |
+          set -o pipefail
+          newman run postman/pokeapi.postman_collection.json \
+            --reporters cli,junit,json \
+            --reporter-junit-export reports/pokeapi.junit.xml \
+            --reporter-json-export reports/pokeapi.results.json \
+            | tee reports/pokeapi.cli.txt
+
+      # Upload reports even when the run step fails (if: always()).
+      # Pinned by commit SHA (v4.4.3).
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: pokeapi-reports
+          path: |
+            reports/pokeapi.cli.txt
+            reports/pokeapi.junit.xml
+            reports/pokeapi.results.json
+          if-no-files-found: warn

@@ -1,0 +1,19 @@
+# Generated Postman/Newman run reports (regenerate by re-running the collection).
+# The directory itself is kept in Git via reports/.gitkeep.
+/reports/*
+!/reports/.gitkeep
+
+# Local tool cache (globally-installed Postman CLI / Newman live here in the sandbox).
+/.toolcache/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Postman credentials / API keys (never commit secrets).
+.postman/
+*.postman-credentials
+postmanConfig.json
+.postman.json
+.env
+.env.*
