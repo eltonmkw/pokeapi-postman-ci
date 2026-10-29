@@ -2,10 +2,23 @@ name: Postman CI
 
 # Run the committed PokéAPI Postman collection against the public PokéAPI.
 # No Postman API key / secret is needed: the collection file runs directly.
+# Triggers:
+#  - pull_request into main is the pre-merge quality gate.
+#  - push scoped to main verifies the post-merge default-branch state without
+#    re-running on every feature-branch push. A bare 'push:' previously caused a
+#    duplicate run per PR update: once for the branch push, once for the PR sync.
+#  - workflow_dispatch keeps manual on-demand reruns available.
+#  - schedule (daily at 06:00 UTC) catches drift in the live public PokéAPI, which
+#    is the system under test and can change with no commit. One run per day
+#    respects the repo's low-request-volume, fair-use posture.
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'
 
 # Token permissions:
 #  - contents: write  -> the trend job pushes a data point to the gh-pages branch
