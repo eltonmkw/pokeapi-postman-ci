@@ -116,6 +116,13 @@ It contains exactly 3 requests (no folders, no scheduled or load tests):
 
 Total: 3 requests, 8 assertions.
 
+### Scaling test coverage
+
+For a repeatable convention on growing this suite beyond the current 3 requests
+(a testing taxonomy, organizing requests into Postman folders, keeping assertions
+DRY, managing variables, and a step-by-step recipe for adding a new test), see the
+[API testing guide](docs/api-testing.md).
+
 ## Continuous integration
 
 The workflow at `.github/workflows/postman-ci.yml` runs the **same** collection
