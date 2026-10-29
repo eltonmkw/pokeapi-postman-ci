@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793316853001,
+  "lastUpdate": 1793317222609,
   "repoUrl": "https://github.com/eltonmkw/pokeapi-postman-ci",
   "entries": {
     "PokéAPI collection trend": [
@@ -116,6 +116,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "Avg response time",
             "value": 36,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "eltonmkw@gmail.com",
+            "name": "Elton Mah",
+            "username": "eltonmkw"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9e2ed3ecae5d2eb87de07dc79df6ba60252418f6",
+          "message": "Merge pull request #7 from eltonmkw/refine-ci-triggers\n\nScope push/pull_request to main and add daily schedule",
+          "timestamp": "2026-10-30T07:40:04+08:00",
+          "tree_id": "23e0d7fbd777252b2ec324b5a2e44a50cebfdc24",
+          "url": "https://github.com/eltonmkw/pokeapi-postman-ci/commit/9e2ed3ecae5d2eb87de07dc79df6ba60252418f6"
+        },
+        "date": 1793317222308,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Failed assertions",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Failed requests",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Avg response time",
+            "value": 31,
             "unit": "ms"
           }
         ]
