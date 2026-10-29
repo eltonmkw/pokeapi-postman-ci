@@ -123,6 +123,13 @@ For a repeatable convention on growing this suite beyond the current 3 requests
 DRY, managing variables, and a step-by-step recipe for adding a new test), see the
 [API testing guide](docs/api-testing.md).
 
+When a run goes red and you need to read the reports, locate the failing
+assertion, classify why it failed, or verify that the suite actually detects
+failures, see the [troubleshooting guide](docs/troubleshooting.md). For the
+reusable API QA decision procedures (scenario generation, writing Newman tests,
+investigating a failing assertion, triaging a flaky run), see
+[AGENTS.md](AGENTS.md).
+
 ## Continuous integration
 
 The workflow at `.github/workflows/postman-ci.yml` runs the **same** collection

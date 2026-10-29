@@ -1,7 +1,7 @@
 {
 	"info": {
 		"name": "PokéAPI CI",
-		"description": "Minimal API test suite for the public PokéAPI (https://pokeapi.co). Three requests validate a known Pokémon, a paginated list, and a 404 for a nonexistent Pokémon. The base URL is a collection variable so it can be changed in one place.",
+		"description": "Minimal API test suite for the public PokéAPI (https://pokeapi.co). Requests are grouped into v2.1 folders (pokemon, pagination, errors) and validate a known Pokémon, a paginated list, and a 404 for a nonexistent Pokémon. The base URL is a collection variable so it can be changed in one place.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -13,149 +13,249 @@
 	],
 	"item": [
 		{
-			"name": "Get Pikachu",
-			"event": [
+			"name": "pokemon",
+			"item": [
 				{
-					"listen": "test",
-					"script": {
-						"type": "text/javascript",
-						"exec": [
-							"pm.test('status code is 200', function () {",
-							"    pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"",
-							"pm.test('id is 25', function () {",
-							"    pm.expect(jsonData.id).to.eql(25);",
-							"});",
-							"",
-							"pm.test(\"name is 'pikachu'\", function () {",
-							"    pm.expect(jsonData.name).to.eql('pikachu');",
-							"});",
-							"",
-							"pm.test(\"types include 'electric'\", function () {",
-							"    const hasElectric = jsonData.types.some(function (t) {",
-							"        return t.type.name === 'electric';",
-							"    });",
-							"    pm.expect(hasElectric).to.be.true;",
-							"});"
-						]
-					}
-				}
-			],
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{base_url}}/api/v2/pokemon/pikachu/",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						"api",
-						"v2",
-						"pokemon",
-						"pikachu",
-						""
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "List first 5 Pokémon",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"type": "text/javascript",
-						"exec": [
-							"pm.test('status code is 200', function () {",
-							"    pm.expect(pm.response.code).to.eql(200);",
-							"});",
-							"",
-							"const jsonData = pm.response.json();",
-							"",
-							"pm.test('results array has length 5', function () {",
-							"    pm.expect(jsonData.results).to.be.an('array');",
-							"    pm.expect(jsonData.results).to.have.lengthOf(5);",
-							"});",
-							"",
-							"pm.test('each result has a non-empty name and a valid pokemon url', function () {",
-							"    jsonData.results.forEach(function (result) {",
-							"        pm.expect(result.name).to.be.a('string');",
-							"        pm.expect(result.name.length).to.be.above(0);",
-							"        pm.expect(result.url).to.be.a('string');",
-							"        pm.expect(result.url).to.match(/^https?:\\/\\//);",
-							"        pm.expect(result.url).to.include('/api/v2/pokemon/');",
-							"    });",
-							"});"
-						]
-					}
-				}
-			],
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{base_url}}/api/v2/pokemon/?limit=5&offset=0",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						"api",
-						"v2",
-						"pokemon",
-						""
-					],
-					"query": [
+					"name": "Get Pikachu",
+					"event": [
 						{
-							"key": "limit",
-							"value": "5"
-						},
-						{
-							"key": "offset",
-							"value": "0"
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status code is 200', function () {",
+									"    pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.test('id is 25', function () {",
+									"    pm.expect(jsonData.id).to.eql(25);",
+									"});",
+									"",
+									"pm.test(\"name is 'pikachu'\", function () {",
+									"    pm.expect(jsonData.name).to.eql('pikachu');",
+									"});",
+									"",
+									"pm.test(\"types include 'electric'\", function () {",
+									"    const hasElectric = jsonData.types.some(function (t) {",
+									"        return t.type.name === 'electric';",
+									"    });",
+									"    pm.expect(hasElectric).to.be.true;",
+									"});",
+									"",
+									"// Scenario C: documented Pokemon schema field types.",
+									"// Source: official PokeAPI Pokemon type table",
+									"// (id:int, name:string, base_experience:int, height:int, is_default:bool, weight:int, types:list).",
+									"pm.test('field types: id is an integer', function () {",
+									"    pm.expect(jsonData.id).to.be.a('number');",
+									"    pm.expect(Number.isInteger(jsonData.id)).to.be.true;",
+									"});",
+									"",
+									"pm.test('field types: name is a string', function () {",
+									"    pm.expect(jsonData.name).to.be.a('string');",
+									"});",
+									"",
+									"pm.test('field types: base_experience is an integer', function () {",
+									"    pm.expect(jsonData.base_experience).to.be.a('number');",
+									"    pm.expect(Number.isInteger(jsonData.base_experience)).to.be.true;",
+									"});",
+									"",
+									"pm.test('field types: height is an integer', function () {",
+									"    pm.expect(jsonData.height).to.be.a('number');",
+									"    pm.expect(Number.isInteger(jsonData.height)).to.be.true;",
+									"});",
+									"",
+									"pm.test('field types: weight is an integer', function () {",
+									"    pm.expect(jsonData.weight).to.be.a('number');",
+									"    pm.expect(Number.isInteger(jsonData.weight)).to.be.true;",
+									"});",
+									"",
+									"pm.test('field types: is_default is a boolean', function () {",
+									"    pm.expect(jsonData.is_default).to.be.a('boolean');",
+									"});",
+									"",
+									"pm.test('field types: types is an array', function () {",
+									"    pm.expect(jsonData.types).to.be.an('array');",
+									"});",
+									"",
+									"// Scenario E: the types list is a well-formed PokemonType list.",
+									"// Source: PokemonType (slot:integer, type: NamedAPIResource {name, url}).",
+									"pm.test('types list: is a non-empty array', function () {",
+									"    pm.expect(jsonData.types).to.be.an('array');",
+									"    pm.expect(jsonData.types.length).to.be.above(0);",
+									"});",
+									"",
+									"pm.test('types list: every entry has an integer slot >= 1', function () {",
+									"    jsonData.types.forEach(function (entry) {",
+									"        pm.expect(entry.slot).to.be.a('number');",
+									"        pm.expect(Number.isInteger(entry.slot)).to.be.true;",
+									"        pm.expect(entry.slot).to.be.at.least(1);",
+									"    });",
+									"});",
+									"",
+									"pm.test('types list: slots are 1-based contiguous and unique', function () {",
+									"    const slots = jsonData.types.map(function (entry) {",
+									"        return entry.slot;",
+									"    }).sort(function (a, b) {",
+									"        return a - b;",
+									"    });",
+									"    const expected = jsonData.types.map(function (_, index) {",
+									"        return index + 1;",
+									"    });",
+									"    pm.expect(slots).to.eql(expected);",
+									"});",
+									"",
+									"pm.test('types list: each entry type is a valid named reference', function () {",
+									"    jsonData.types.forEach(function (entry) {",
+									"        pm.expect(entry.type.name).to.be.a('string');",
+									"        pm.expect(entry.type.name.length).to.be.above(0);",
+									"        pm.expect(entry.type.url).to.be.a('string');",
+									"        pm.expect(entry.type.url).to.include('/api/v2/type/');",
+									"    });",
+									"});"
+								]
+							}
 						}
-					]
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v2/pokemon/pikachu/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"pokemon",
+								"pikachu",
+								""
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
 		},
 		{
-			"name": "Nonexistent Pokémon returns 404",
-			"event": [
+			"name": "pagination",
+			"item": [
 				{
-					"listen": "test",
-					"script": {
-						"type": "text/javascript",
-						"exec": [
-							"pm.test('status code is 404', function () {",
-							"    pm.expect(pm.response.code).to.eql(404);",
-							"});"
-						]
-					}
-				}
-			],
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{base_url}}/api/v2/pokemon/this-does-not-exist-9999/",
-					"host": [
-						"{{base_url}}"
+					"name": "List first 5 Pokémon",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status code is 200', function () {",
+									"    pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.test('count is an integer', function () {",
+									"    pm.expect(jsonData.count).to.be.a('number');",
+									"    pm.expect(Number.isInteger(jsonData.count)).to.be.true;",
+									"});",
+									"",
+									"pm.test('body has next and previous properties', function () {",
+									"    pm.expect(jsonData).to.have.property('next');",
+									"    pm.expect(jsonData).to.have.property('previous');",
+									"});",
+									"",
+									"pm.test('results is an array', function () {",
+									"    pm.expect(jsonData.results).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('results array has length 5', function () {",
+									"    pm.expect(jsonData.results).to.be.an('array');",
+									"    pm.expect(jsonData.results).to.have.lengthOf(5);",
+									"});",
+									"",
+									"pm.test('each result has a non-empty name and a valid pokemon url', function () {",
+									"    jsonData.results.forEach(function (result) {",
+									"        pm.expect(result.name).to.be.a('string');",
+									"        pm.expect(result.name.length).to.be.above(0);",
+									"        pm.expect(result.url).to.be.a('string');",
+									"        pm.expect(result.url).to.match(/^https?:\\/\\//);",
+									"        pm.expect(result.url).to.include('/api/v2/pokemon/');",
+									"    });",
+									"});"
+								]
+							}
+						}
 					],
-					"path": [
-						"api",
-						"v2",
-						"pokemon",
-						"this-does-not-exist-9999",
-						""
-					]
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v2/pokemon/?limit=5&offset=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"pokemon",
+								""
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "5"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
+		},
+		{
+			"name": "errors",
+			"item": [
+				{
+					"name": "Nonexistent Pokémon returns 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status code is 404', function () {",
+									"    pm.expect(pm.response.code).to.eql(404);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v2/pokemon/this-does-not-exist-9999/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"pokemon",
+								"this-does-not-exist-9999",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	]
 }
