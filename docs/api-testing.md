@@ -343,6 +343,34 @@ Each run also writes a summary table to the **run page** (via
 `$GITHUB_STEP_SUMMARY`): result, assertions passed/failed, requests failed, and
 average response time.
 
+### Full HTML report on the Pages site (pushes to `main`)
+
+On pushes to `main`, the run also produces a rich, standalone HTML report with
+[`newman-reporter-htmlextra`](https://github.com/DannyDainton/newman-reporter-htmlextra)
+and publishes the public site via the **official GitHub Pages deployment**
+(`actions/deploy-pages`). The bare Pages URL shows the **latest run's** detailed
+results — every request, its response, and each assertion:
+
+- **Latest report:** `https://<owner>.github.io/<repo>/`
+- **Trend chart (history):** `https://<owner>.github.io/<repo>/trend/`
+
+**Why a deploy job, not a branch push.** GitHub Pages' branch-publishing mode
+does *not* rebuild when the commit is pushed by a workflow using the default
+`GITHUB_TOKEN`
+([documented here](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site#troubleshooting-publishing-from-a-branch)).
+So the repo's Pages build type is set to **GitHub Actions** (`build_type:
+workflow`), and a dedicated `deploy-pages` job assembles and deploys the site:
+
+- `/` ← the latest htmlextra report (`index.html`)
+- `/trend/` ← the chart + history, read from the `gh-pages` branch
+
+The `gh-pages` branch is still the **data store** for the trend history (the
+benchmark action keeps appending points there), but Pages no longer *serves*
+from it — the deploy job reads `gh-pages/trend/` and bundles it with the fresh
+report into one Pages artifact. Deployment is gated to `main` pushes, runs after
+the collection job so the newest trend point is included, and uses `if: always()`
+so a failing run still publishes its (red) report.
+
 ### Trend over time (pushes to `main`)
 
 On every push to `main`, the workflow extracts three metrics from the Newman JSON
@@ -354,10 +382,10 @@ report and appends them to a time series using
 - **Avg response time** (ms) — PokéAPI latency, useful for spotting slowdowns
 
 The data and an interactive chart are committed to the **`gh-pages` branch** under
-`trend/`. Enable **GitHub Pages** for that branch (Settings → Pages → Branch:
-`gh-pages`) to view the chart at your Pages URL, e.g.
-`https://<owner>.github.io/<repo>/trend/`. The series only updates on `main`
-pushes, so pull requests and feature branches never pollute the published trend.
+`trend/`, which the `deploy-pages` job then serves at
+`https://<owner>.github.io/<repo>/trend/` (see the deployment note above). The
+series only updates on `main` pushes, so pull requests and feature branches never
+pollute the published trend.
 
 An **alert threshold** of `200%` flags any run where a metric regresses sharply
 versus the previous point — for example a new assertion failure, or response time
