@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793316425793,
+  "lastUpdate": 1793316853001,
   "repoUrl": "https://github.com/eltonmkw/pokeapi-postman-ci",
   "entries": {
     "PokéAPI collection trend": [
@@ -77,6 +77,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "Avg response time",
             "value": 61,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "eltonmkw@gmail.com",
+            "name": "Elton Mah",
+            "username": "eltonmkw"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1e8404fc1b4553fc438e076ed1f1c96a1c31ebcf",
+          "message": "Merge pull request #6 from eltonmkw/add-universal-agent-skills\n\nAdd four portable Agent Skills for the API QA workflow",
+          "timestamp": "2026-10-30T07:33:54+08:00",
+          "tree_id": "5fd5a502317edef3f875b95f9878de58baba16a2",
+          "url": "https://github.com/eltonmkw/pokeapi-postman-ci/commit/1e8404fc1b4553fc438e076ed1f1c96a1c31ebcf"
+        },
+        "date": 1793316852699,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Failed assertions",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Failed requests",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Avg response time",
+            "value": 36,
             "unit": "ms"
           }
         ]
