@@ -42,12 +42,14 @@ jobs:
         with:
           node-version: '22'
 
-      # Pin the exact Newman version so CI is reproducible.
-      # Newman is Postman's officially maintained command-line Collection Runner
-      # and is used here (instead of postman-cli) because it is the tool that
-      # emits JUnit XML + JSON reports, matching the verified local run.
+      # Pin the exact Newman version so CI is reproducible. Newman is Postman's
+      # officially maintained command-line Collection Runner, used here because
+      # it emits the JUnit XML + JSON reports the downstream steps consume.
+      # The htmlextra reporter produces a rich, standalone HTML report that is
+      # published to the gh-pages root so the bare Pages URL shows the latest
+      # test results.
       - name: Install Newman (pinned)
-        run: npm install -g newman@6.2.3
+        run: npm install -g newman@6.2.3 newman-reporter-htmlextra@1.23.1
 
       # Same command + reporters as the local run. The CLI reporter only writes
       # to stdout, so stdout is teed into reports/pokeapi.cli.txt to capture the
@@ -59,9 +61,12 @@ jobs:
         run: |
           set -o pipefail
           newman run postman/pokeapi.postman_collection.json \
-            --reporters cli,junit,json \
+            --reporters cli,junit,json,htmlextra \
             --reporter-junit-export reports/pokeapi.junit.xml \
             --reporter-json-export reports/pokeapi.results.json \
+            --reporter-htmlextra-export reports/pokeapi.report.html \
+            --reporter-htmlextra-title "PokéAPI CI results" \
+            --reporter-htmlextra-browserTitle "PokéAPI CI results" \
             | tee reports/pokeapi.cli.txt
 
       # Additive job summary. This is a SEPARATE step from 'Run collection' so
@@ -188,6 +193,7 @@ jobs:
             reports/pokeapi.cli.txt
             reports/pokeapi.junit.xml
             reports/pokeapi.results.json
+            reports/pokeapi.report.html
           if-no-files-found: warn
 
       # Per-run readable report: parse the JUnit XML and publish it as a check
@@ -228,3 +234,51 @@ jobs:
           alert-threshold: '200%'
           comment-on-alert: true
           fail-on-alert: false
+
+      # Publish the htmlextra report to the gh-pages ROOT as index.html, so the
+      # bare Pages URL (https://<owner>.github.io/<repo>/) shows the latest test
+      # results. The trend chart stays at /trend/ (owned by the benchmark action
+      # above). Runs only on pushes to main, AFTER the trend step, so it layers
+      # on top of the benchmark action's commit instead of racing it. A short
+      # retry loop handles the case where gh-pages still moved underneath us.
+      # if: always() so a failing run still publishes its (red) report.
+      - name: Publish HTML report to gh-pages root
+        if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ ! -f reports/pokeapi.report.html ]; then
+            echo "No htmlextra report found; skipping publish."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          tmp="$(mktemp -d)"
+          cp reports/pokeapi.report.html "$tmp/index.html"
+
+          for attempt in 1 2 3; do
+            git fetch origin gh-pages
+            git worktree add --force /tmp/ghp origin/gh-pages
+            cp "$tmp/index.html" /tmp/ghp/index.html
+            touch /tmp/ghp/.nojekyll
+            ( cd /tmp/ghp
+              git add index.html .nojekyll
+              if git diff --cached --quiet; then
+                echo "No change to publish."
+              else
+                git commit -m "Publish latest test report to gh-pages root (run ${GITHUB_RUN_ID})"
+              fi
+            )
+            if git -C /tmp/ghp push origin HEAD:gh-pages; then
+              echo "Published on attempt ${attempt}."
+              git worktree remove --force /tmp/ghp
+              exit 0
+            fi
+            echo "Push rejected (gh-pages moved); retrying (${attempt}/3)..."
+            git worktree remove --force /tmp/ghp
+            sleep 3
+          done
+          echo "::warning::Could not publish HTML report after 3 attempts (gh-pages kept moving)."
+          exit 0

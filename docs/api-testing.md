@@ -343,6 +343,24 @@ Each run also writes a summary table to the **run page** (via
 `$GITHUB_STEP_SUMMARY`): result, assertions passed/failed, requests failed, and
 average response time.
 
+### Full HTML report on the Pages site (pushes to `main`)
+
+On pushes to `main`, the run also produces a rich, standalone HTML report with
+[`newman-reporter-htmlextra`](https://github.com/DannyDainton/newman-reporter-htmlextra)
+and publishes it to the **root** of the `gh-pages` branch as `index.html`. So the
+bare Pages URL shows the **latest run's** detailed results — every request, its
+response, and each assertion:
+
+- **Latest report:** `https://<owner>.github.io/<repo>/`
+- **Trend chart (history):** `https://<owner>.github.io/<repo>/trend/`
+
+The report reflects a single (the most recent) `main` run; the trend chart under
+`/trend/` is what accumulates history. Publishing is gated to `main` pushes and
+runs after the trend step, layering the report on top of the benchmark commit
+rather than racing it (with a short retry if `gh-pages` moves underneath). A
+failing run still publishes its red report, so the Pages URL always reflects the
+real state of `main`.
+
 ### Trend over time (pushes to `main`)
 
 On every push to `main`, the workflow extracts three metrics from the Newman JSON
