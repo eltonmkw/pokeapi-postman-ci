@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793315813190,
+  "lastUpdate": 1793316425793,
   "repoUrl": "https://github.com/eltonmkw/pokeapi-postman-ci",
   "entries": {
     "PokéAPI collection trend": [
@@ -38,6 +38,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "Avg response time",
             "value": 72,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "eltonmkw@gmail.com",
+            "name": "Elton Mah",
+            "username": "eltonmkw"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bd0d2f5046f80bb64b80e77f6a20dbcb3f9f9c83",
+          "message": "Merge pull request #5 from eltonmkw/apply-ai-api-testing-workflow\n\nApply repeatable AI-assisted API testing workflow",
+          "timestamp": "2026-10-30T07:26:40+08:00",
+          "tree_id": "37061983df7062429ff7803dcc221fa3c10115fe",
+          "url": "https://github.com/eltonmkw/pokeapi-postman-ci/commit/bd0d2f5046f80bb64b80e77f6a20dbcb3f9f9c83"
+        },
+        "date": 1793316425026,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Failed assertions",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Failed requests",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Avg response time",
+            "value": 61,
             "unit": "ms"
           }
         ]
