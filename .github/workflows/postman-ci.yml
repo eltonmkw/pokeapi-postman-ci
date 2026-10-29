@@ -21,11 +21,21 @@ on:
     - cron: '0 6 * * *'
 
 # Token permissions:
-#  - contents: write  -> the trend job pushes a data point to the gh-pages branch
+#  - contents: write  -> the trend step pushes a data point to the gh-pages branch
 #  - checks:   write  -> dorny/test-reporter publishes a per-run check/report
+#  - pages:    write  -> the deploy job publishes the site via GitHub Pages
+#  - id-token: write  -> required by actions/deploy-pages (OIDC) to deploy
 permissions:
   contents: write
   checks: write
+  pages: write
+  id-token: write
+
+# Allow only one concurrent Pages deployment; let a run in progress finish so a
+# deployment is never left half-applied.
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   run-collection:
@@ -235,50 +245,93 @@ jobs:
           comment-on-alert: true
           fail-on-alert: false
 
-      # Publish the htmlextra report to the gh-pages ROOT as index.html, so the
-      # bare Pages URL (https://<owner>.github.io/<repo>/) shows the latest test
-      # results. The trend chart stays at /trend/ (owned by the benchmark action
-      # above). Runs only on pushes to main, AFTER the trend step, so it layers
-      # on top of the benchmark action's commit instead of racing it. A short
-      # retry loop handles the case where gh-pages still moved underneath us.
-      # if: always() so a failing run still publishes its (red) report.
-      - name: Publish HTML report to gh-pages root
-        if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+      # Hand the htmlextra report to the deploy job as an artifact. The deploy
+      # job (below) assembles it with the trend data and publishes via the
+      # official GitHub Pages deployment, which — unlike a GITHUB_TOKEN push to
+      # a branch — reliably triggers a Pages deployment. Runs even on failure so
+      # a red run still publishes its report. Pinned by SHA (v4.4.3).
+      - name: Upload report for Pages deploy
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: pokeapi-html-report
+          path: reports/pokeapi.report.html
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # Deploy the public Pages site via the official Actions deployment (not a
+  # branch push). GitHub's branch-based publishing does NOT rebuild when the
+  # commit is pushed with GITHUB_TOKEN, so the site is deployed here instead.
+  #
+  # The site is assembled fresh each run:
+  #   /            -> the latest htmlextra report (index.html)
+  #   /trend/      -> the trend chart + history, read from the gh-pages branch
+  #                   (the benchmark action in run-collection still writes the
+  #                    history there; gh-pages is the data store, not the server)
+  #
+  # Gated to pushes on main. Needs the run-collection job (and its trend step)
+  # to finish first so gh-pages holds the newest data point.
+  # ---------------------------------------------------------------------------
+  deploy-pages:
+    name: Deploy Pages site
+    needs: run-collection
+    if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Check out the gh-pages branch (the trend data store) into ./ghpages.
+      # Pinned by SHA (v4.2.2).
+      - name: Checkout gh-pages (trend data)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: gh-pages
+          path: ghpages
+
+      # Download the htmlextra report produced by run-collection.
+      # Pinned by SHA (v4.1.8).
+      - name: Download HTML report
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: pokeapi-html-report
+          path: downloaded-report
+        continue-on-error: true
+
+      # Assemble the site directory: report at root, trend subtree under /trend/.
+      - name: Assemble site
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          if [ ! -f reports/pokeapi.report.html ]; then
-            echo "No htmlextra report found; skipping publish."
-            exit 0
+          mkdir -p site
+          # .nojekyll so GitHub serves files as-is (no Jekyll processing).
+          touch site/.nojekyll
+          # Root = latest report. Fall back to a placeholder if it is missing.
+          if [ -f downloaded-report/pokeapi.report.html ]; then
+            cp downloaded-report/pokeapi.report.html site/index.html
+          else
+            echo '<!doctype html><title>PokéAPI CI</title><p>No report for this run. See <a href="./trend/">trend chart</a>.</p>' > site/index.html
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          tmp="$(mktemp -d)"
-          cp reports/pokeapi.report.html "$tmp/index.html"
+          # /trend/ = the committed benchmark chart + history from gh-pages.
+          if [ -d ghpages/trend ]; then
+            mkdir -p site/trend
+            cp -R ghpages/trend/. site/trend/
+          fi
+          echo "Assembled site:"; find site -maxdepth 2 -type f | sort
 
-          for attempt in 1 2 3; do
-            git fetch origin gh-pages
-            git worktree add --force /tmp/ghp origin/gh-pages
-            cp "$tmp/index.html" /tmp/ghp/index.html
-            touch /tmp/ghp/.nojekyll
-            ( cd /tmp/ghp
-              git add index.html .nojekyll
-              if git diff --cached --quiet; then
-                echo "No change to publish."
-              else
-                git commit -m "Publish latest test report to gh-pages root (run ${GITHUB_RUN_ID})"
-              fi
-            )
-            if git -C /tmp/ghp push origin HEAD:gh-pages; then
-              echo "Published on attempt ${attempt}."
-              git worktree remove --force /tmp/ghp
-              exit 0
-            fi
-            echo "Push rejected (gh-pages moved); retrying (${attempt}/3)..."
-            git worktree remove --force /tmp/ghp
-            sleep 3
-          done
-          echo "::warning::Could not publish HTML report after 3 attempts (gh-pages kept moving)."
-          exit 0
+      # Configure Pages (switches the repo's build type to "workflow" if needed).
+      # Pinned by SHA (v6.0.0).
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      # Package ./site as the Pages artifact. Pinned by SHA (v5.0.0).
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
+      # Deploy the artifact. This reliably triggers a Pages deployment.
+      # Pinned by SHA (v5.0.1).
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
