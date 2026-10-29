@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "PokéAPI Postman Testing",
+      "trigger": "PostFileSave",
+      "matcher": "(postman/.*\\.json$|\\.postman\\.json$|\\.github/workflows/.*\\.ya?ml$)",
+      "action": {
+        "type": "agent",
+        "prompt": "The Postman collection or CI configuration has changed. Read .postman.json to get the workspace and collection IDs. If it does not exist or is empty, help set up a Postman collection for this project's API. Otherwise, run the collection at postman/pokeapi.postman_collection.json with Newman (npx newman run postman/pokeapi.postman_collection.json), show me the pass/fail results, and propose fixes for any failed assertions."
+      }
+    }
+  ]
+}
