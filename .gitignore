@@ -9,3 +9,11 @@
 # Node
 node_modules/
 npm-debug.log*
+
+# Postman credentials / API keys (never commit secrets).
+.postman/
+*.postman-credentials
+postmanConfig.json
+.postman.json
+.env
+.env.*
