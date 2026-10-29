@@ -48,6 +48,119 @@ jobs:
             --reporter-json-export reports/pokeapi.results.json \
             | tee reports/pokeapi.cli.txt
 
+      # Additive job summary. This is a SEPARATE step from 'Run collection' so
+      # it never alters or swallows that step's exit code: a failed assertion
+      # still fails the job via 'Run collection'. if: always() so a red run
+      # still gets a summary. It only reads the named report files and only
+      # writes to $GITHUB_STEP_SUMMARY; it never dumps the environment or any
+      # secret. Parse errors are tolerated so this step does not fail the job.
+      - name: Write job summary
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          JUNIT="reports/pokeapi.junit.xml"
+          JSON="reports/pokeapi.results.json"
+          node --input-type=module - "$JUNIT" "$JSON" >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          import { readFileSync } from 'node:fs';
+
+          const junitPath = process.argv[2];
+          const jsonPath = process.argv[3];
+          const out = [];
+          out.push('## PokeAPI Newman results');
+
+          function fromJunit(xml) {
+            // Aggregate counts across all <testsuite .../> elements.
+            let tests = 0, failures = 0, errors = 0;
+            const suiteRe = /<testsuite\b[^>]*>/g;
+            let m;
+            while ((m = suiteRe.exec(xml)) !== null) {
+              const tag = m[0];
+              const t = /\btests="(\d+)"/.exec(tag);
+              const f = /\bfailures="(\d+)"/.exec(tag);
+              const e = /\berrors="(\d+)"/.exec(tag);
+              if (t) tests += Number(t[1]);
+              if (f) failures += Number(f[1]);
+              if (e) errors += Number(e[1]);
+            }
+            // Collect names of failing testcases for a short list. Match both
+            // self-closing <testcase .../> and <testcase ...>...</testcase>;
+            // only paired testcases can contain <failure>/<error> children.
+            const failed = [];
+            const caseRe = /<testcase\b([^>]*?)(\/>|>([\s\S]*?)<\/testcase>)/g;
+            let c;
+            while ((c = caseRe.exec(xml)) !== null) {
+              const attrs = c[1];
+              const body = c[3] || '';
+              if (/<failure\b/.test(body) || /<error\b/.test(body)) {
+                const nm = /\bname="([^"]*)"/.exec(attrs);
+                failed.push(nm ? nm[1] : '(unnamed)');
+              }
+            }
+            return { assertions: tests, failures: failures + errors, failed };
+          }
+
+          function fromJson(txt) {
+            const data = JSON.parse(txt);
+            const run = (data && data.run) || {};
+            const stats = run.stats || {};
+            const requests = (stats.requests && stats.requests.total) || 0;
+            const assertions = (stats.assertions && stats.assertions.total) || 0;
+            const failures = (stats.assertions && stats.assertions.failed) || 0;
+            const failed = (run.failures || []).map((x) => {
+              const name = x && x.error && x.error.test ? x.error.test
+                : (x && x.source && x.source.name ? x.source.name : '(unnamed)');
+              return name;
+            });
+            return { requests, assertions, failures, failed };
+          }
+
+          let summary = null;
+          let source = null;
+          try {
+            const xml = readFileSync(junitPath, 'utf8');
+            summary = fromJunit(xml);
+            source = junitPath;
+          } catch (_) {
+            try {
+              const txt = readFileSync(jsonPath, 'utf8');
+              summary = fromJson(txt);
+              source = jsonPath;
+            } catch (_2) {
+              summary = null;
+            }
+          }
+
+          if (!summary) {
+            out.push('');
+            out.push('No report found (reports/pokeapi.junit.xml and reports/pokeapi.results.json were missing or unreadable).');
+            process.stdout.write(out.join('\n') + '\n');
+          } else {
+            out.push('');
+            out.push('| Metric | Count |');
+            out.push('| --- | --- |');
+            if (summary.requests !== undefined) out.push(`| Requests | ${summary.requests} |`);
+            out.push(`| Assertions | ${summary.assertions ?? 0} |`);
+            out.push(`| Failures | ${summary.failures ?? 0} |`);
+            if (summary.failed && summary.failed.length) {
+              out.push('');
+              out.push('### Failed assertions');
+              for (const name of summary.failed.slice(0, 25)) {
+                out.push(`- ${name}`);
+              }
+              if (summary.failed.length > 25) {
+                out.push(`- ...and ${summary.failed.length - 25} more`);
+              }
+            }
+            out.push('');
+            out.push(`_Source: ${source}_`);
+            process.stdout.write(out.join('\n') + '\n');
+          }
+          EOF
+          # Never let a parse/summary problem fail the job: the authoritative
+          # pass/fail is the separate 'Run collection' step.
+          exit 0
+
       # Upload reports even when the run step fails (if: always()).
       # Pinned by commit SHA (v4.4.3).
       - name: Upload test reports
