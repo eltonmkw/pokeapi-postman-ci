@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Generate API Tests From Scenario Doc",
+      "trigger": "PostFileSave",
+      "matcher": "docs/scenarios/.*\\.md$",
+      "action": {
+        "type": "agent",
+        "prompt": "A scenario or requirement document was saved under docs/scenarios/ (this is where the user drops a scenario doc to trigger test scaffolding). Read the saved document, then apply the procedure in skills/generate-qa-scenarios/SKILL.md to produce a reviewed scenario table with exactly these columns: Title | Expected behaviour/source | Priority | Automate | Reason. Give every scenario an owner (QA or Dev), an Automate decision (Yes or No), and a one-line reason. Only test behaviour the official PokeAPI docs actually document, and merge overlapping scenarios. Then, for each scenario marked Automate: Yes, apply skills/write-newman-tests/SKILL.md to DRAFT deterministic pm.test/pm.expect assertions into the correct folder (pokemon, pagination, or errors) of postman/pokeapi.postman_collection.json, following the folder and naming conventions in docs/api-testing.md. Use {{base_url}} in every URL (never hard-code the host), assert field types and documented values (not full-response snapshots), and add no response-time thresholds. Never weaken, skip, or comment out an assertion to get green. PROPOSE the collection edits for the human to review and do not silently auto-apply them. There is no application code in this repo, so never attempt to fix the API; raise suspected defects with evidence. Keep request volume low by folding related checks into existing requests where possible."
+      }
+    }
+  ]
+}
