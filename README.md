@@ -51,19 +51,27 @@ Two ways to run, depending on what you want.
 postman collection run postman/pokeapi.postman_collection.json
 ```
 
-**2. Full run that produces all three report forms** (CLI output, JUnit XML, JSON).
+**2. Full run that produces all three report forms** (CLI text, JUnit XML, JSON).
 This is the exact command CI uses:
 
 ```bash
+set -o pipefail
 newman run postman/pokeapi.postman_collection.json \
   --reporters cli,junit,json \
   --reporter-junit-export reports/pokeapi.junit.xml \
-  --reporter-json-export reports/pokeapi.results.json
+  --reporter-json-export reports/pokeapi.results.json \
+  | tee reports/pokeapi.cli.txt
 ```
+
+Newman's `cli` reporter only prints to the terminal (it has no export flag in
+this version), so the command pipes stdout through `tee` to also save it as
+`reports/pokeapi.cli.txt`. `set -o pipefail` makes the pipeline exit with
+Newman's exit code rather than `tee`'s, so a failed request or assertion still
+reports a failure instead of being masked by the pipe.
 
 > **Why two tools?** The official Postman CLI cannot export JUnit or JSON reports
 > (it only writes YAML via `--output`). The three report forms this project needs
-> (CLI stdout, JUnit XML, JSON) are produced by Newman, so Newman is used for the
+> (CLI text, JUnit XML, JSON) are produced by Newman, so Newman is used for the
 > reporting run while the Postman CLI gives a fast official sanity check.
 
 ### What a successful run looks like
@@ -80,7 +88,7 @@ Reports are written into the `reports/` directory:
 
 | Report form   | Path                          |
 | ------------- | ----------------------------- |
-| CLI stdout    | `reports/pokeapi.cli.txt`     |
+| CLI text      | `reports/pokeapi.cli.txt`     |
 | JUnit XML     | `reports/pokeapi.junit.xml`   |
 | JSON          | `reports/pokeapi.results.json`|
 
@@ -117,8 +125,8 @@ file as your local run. Key points:
 - **Fails on failure**: it runs Newman and does not swallow the exit code, so any
   failing request or assertion fails the job.
 - **Always uploads reports**: the artifact upload step uses `if: always()`, so the
-  JUnit XML and JSON reports are uploaded even when the test step fails. You can
-  download them from the run's "Artifacts" section to debug.
+  CLI text, JUnit XML, and JSON reports are uploaded even when the test step fails.
+  You can download them from the run's "Artifacts" section to debug.
 - **Minimal permissions**: the workflow sets `permissions: contents: read`, so the
   job's token can only read the repository and nothing else.
 - **Pinned versions**: the GitHub Actions are pinned by commit SHA (with a version
