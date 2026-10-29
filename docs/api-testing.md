@@ -322,3 +322,62 @@ collection; the folder column shows where each would live once you group them. T
 counts above match the live run recorded for this project, so use them as the
 baseline: after you add a test, the totals in `reports/pokeapi.results.json` should
 grow by exactly what you added.
+
+---
+
+## Seeing results and trends in CI
+
+The CI workflow does more than pass or fail: it surfaces each run's results in
+the GitHub Actions UI and tracks key metrics over time so you can spot patterns.
+
+### Per-run report (every run)
+
+After the collection runs, [`dorny/test-reporter`](https://github.com/dorny/test-reporter)
+parses `reports/pokeapi.junit.xml` and publishes a **"PokéAPI test results"**
+check on the run. Open any run (or the **Checks** tab of a pull request) to see
+pass/fail per request and per assertion, grouped by folder, without downloading
+the artifact. Failing runs still publish the report (`fail-on-error: false`), so
+a red run shows exactly which assertion broke.
+
+Each run also writes a summary table to the **run page** (via
+`$GITHUB_STEP_SUMMARY`): result, assertions passed/failed, requests failed, and
+average response time.
+
+### Trend over time (pushes to `main`)
+
+On every push to `main`, the workflow extracts three metrics from the Newman JSON
+report and appends them to a time series using
+[`benchmark-action/github-action-benchmark`](https://github.com/benchmark-action/github-action-benchmark):
+
+- **Failed assertions** (count) — should stay at `0`
+- **Failed requests** (count) — should stay at `0`
+- **Avg response time** (ms) — PokéAPI latency, useful for spotting slowdowns
+
+The data and an interactive chart are committed to the **`gh-pages` branch** under
+`trend/`. Enable **GitHub Pages** for that branch (Settings → Pages → Branch:
+`gh-pages`) to view the chart at your Pages URL, e.g.
+`https://<owner>.github.io/<repo>/trend/`. The series only updates on `main`
+pushes, so pull requests and feature branches never pollute the published trend.
+
+An **alert threshold** of `200%` flags any run where a metric regresses sharply
+versus the previous point — for example a new assertion failure, or response time
+more than doubling. Alerts post a commit comment but do **not** fail the build
+(`fail-on-alert: false`), so an upstream PokéAPI slowdown is visible without
+breaking your pipeline.
+
+> **What the trend actually tells you.** The suite asserts deterministic values
+> against the live public PokéAPI, so the failure-count lines should sit flat at
+> zero. Early movement in the chart will almost always be the **response-time**
+> line reacting to PokéAPI's own latency or a network blip in the runner, not a
+> regression in your tests. Read a spike as "the upstream API or the runner was
+> slow then", and treat any non-zero failure count as the real signal to
+> investigate.
+
+### The metrics script
+
+The extraction lives in [`scripts/newman-trend-metrics.js`](../scripts/newman-trend-metrics.js).
+It reads `run.stats` and `run.timings` from the Newman JSON report, writes the
+job-summary table, and emits `reports/trend-metrics.json` in the
+`customSmallerIsBetter` format the benchmark action expects (all three metrics
+are framed so that lower is better). To change what the trend tracks, edit the
+`metrics` array in that script.

@@ -7,9 +7,12 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Minimal token permissions: the job only needs to read the repository.
+# Token permissions:
+#  - contents: write  -> the trend job pushes a data point to the gh-pages branch
+#  - checks:   write  -> dorny/test-reporter publishes a per-run check/report
 permissions:
-  contents: read
+  contents: write
+  checks: write
 
 jobs:
   run-collection:
@@ -60,3 +63,42 @@ jobs:
             reports/pokeapi.junit.xml
             reports/pokeapi.results.json
           if-no-files-found: warn
+
+      # Per-run readable report: parse the JUnit XML and publish it as a check
+      # so pass/fail per request is visible in the Actions UI without downloading
+      # the artifact. Runs even on failure. Pinned by commit SHA (v1.9.1).
+      - name: Publish per-run test report
+        if: always()
+        uses: dorny/test-reporter@31a54ee7ebcacc03a09ea97a7e5465a47b84aea5 # v1.9.1
+        with:
+          name: PokéAPI test results
+          path: reports/pokeapi.junit.xml
+          reporter: java-junit
+          fail-on-error: false
+
+      # Extract trend metrics from the Newman JSON report and write a run summary
+      # table to the Actions run page. Runs even on failure so a failing run still
+      # contributes a data point to the trend.
+      - name: Extract trend metrics
+        if: always()
+        run: node scripts/newman-trend-metrics.js reports/pokeapi.results.json reports/trend-metrics.json
+
+      # Append this run's metrics to a time series stored on the gh-pages branch
+      # and render a chart. Only on pushes to the default branch, so PRs and
+      # feature branches do not pollute the published trend. Pinned by SHA (v1.20.4).
+      - name: Update test trend
+        if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: benchmark-action/github-action-benchmark@d48d326b4ca9ba73ca0cd0d59f108f9e02a381c7 # v1.20.4
+        with:
+          name: PokéAPI collection trend
+          tool: customSmallerIsBetter
+          output-file-path: reports/trend-metrics.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: trend
+          # Mark a run as an alert if any metric regresses sharply vs. the
+          # previous data point (e.g. new failures, or response time doubling).
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: false
