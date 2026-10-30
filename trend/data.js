@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793318472208,
+  "lastUpdate": 1793319954095,
   "repoUrl": "https://github.com/eltonmkw/pokeapi-postman-ci",
   "entries": {
     "PokéAPI collection trend": [
@@ -272,6 +272,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "Avg response time",
             "value": 121,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "eltonmkw@gmail.com",
+            "name": "Elton Mah",
+            "username": "eltonmkw"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e2d50e410fce41f35017c9df9f6c03734cb5a1dc",
+          "message": "Merge pull request #11 from eltonmkw/graph-at-root-clickable-reports\n\nTrend chart as landing page with clickable per-run reports",
+          "timestamp": "2026-10-30T08:25:34+08:00",
+          "tree_id": "7d1b920290c0b149e9c7e8c458dfec8c620daecb",
+          "url": "https://github.com/eltonmkw/pokeapi-postman-ci/commit/e2d50e410fce41f35017c9df9f6c03734cb5a1dc"
+        },
+        "date": 1793319953769,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Failed assertions",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Failed requests",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Avg response time",
+            "value": 34,
             "unit": "ms"
           }
         ]
