@@ -209,8 +209,13 @@ jobs:
       # Per-run readable report: parse the JUnit XML and publish it as a check
       # so pass/fail per request is visible in the Actions UI without downloading
       # the artifact. Runs even on failure. Pinned by commit SHA (v1.9.1).
+      # Skipped for pull requests from a fork: the token is read-only there even
+      # though the workflow requests checks: write, so creating the check run
+      # fails with an authorization error that fail-on-error does not suppress and
+      # would turn an otherwise-green run red. Still runs for same-repo PRs,
+      # pushes, schedule, and manual dispatch.
       - name: Publish per-run test report
-        if: always()
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
         uses: dorny/test-reporter@31a54ee7ebcacc03a09ea97a7e5465a47b84aea5 # v1.9.1
         with:
           name: PokéAPI test results

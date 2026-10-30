@@ -48,7 +48,15 @@ if (summaryFile) {
   const passRate = assertions.total
     ? ((assertionsPassed / assertions.total) * 100).toFixed(1)
     : '0.0';
-  const verdict = assertions.failed === 0 ? '✅ pass' : '❌ fail';
+  // The verdict must reflect ALL Newman failures, not just failed assertions.
+  // A request error, or a test script throwing outside a pm.test (e.g. a 200
+  // response whose invalid body makes pm.response.json() throw), is recorded as
+  // a failed request and/or a run.failures entry while assertions.failed stays
+  // 0. Deriving the verdict from assertions alone would mislabel such a run as a
+  // pass.
+  const runFailures = Array.isArray(run.failures) ? run.failures.length : 0;
+  const hasFailure = assertions.failed > 0 || requests.failed > 0 || runFailures > 0;
+  const verdict = hasFailure ? '❌ fail' : '✅ pass';
   const summary = [
     '### PokéAPI collection results',
     '',
@@ -58,10 +66,14 @@ if (summaryFile) {
     `| Assertions passed | ${assertionsPassed} / ${assertions.total} (${passRate}%) |`,
     `| Assertions failed | ${assertions.failed} |`,
     `| Requests failed | ${requests.failed} / ${requests.total} |`,
-    `| Avg response time | ${responseAverage} ms |`,
-    '',
-  ].join('\n');
-  fs.appendFileSync(summaryFile, summary + '\n');
+  ];
+  // Surface run-level failures so a fail with zero failed assertions is explained.
+  if (runFailures > 0) {
+    summary.push(`| Script/other failures | ${runFailures} |`);
+  }
+  summary.push(`| Avg response time | ${responseAverage} ms |`, '');
+  const summaryText = summary.join('\n');
+  fs.appendFileSync(summaryFile, summaryText + '\n');
 }
 
 // 2. Benchmark metrics file (array of { name, unit, value }).
