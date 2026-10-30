@@ -95,14 +95,24 @@ const labelGroup =
 //     (< >), ';', or the start of an HTML entity ('&'). A bare ESCAPED value
 //     begins with '&quot;' and is caught by the quoted alternatives above, so a
 //     leading '&' is still a safe stop char for the genuinely-unquoted case.
+//
+//   Each ENTITY-quoted run is bounded by its specific closing delimiter via a
+//   lazy '[\\s\\S]*?' up to the next closing quote entity, NOT '[^&]*'. The
+//   value delimiter is itself an entity ('&quot;' etc.), and htmlextra escapes
+//   '&', '<', '>' INSIDE body/header values, so a secret may legitimately
+//   contain '&amp;'/'&lt;'/'&gt;'. A '[^&]*' bound would stop at that first
+//   inner '&' and leak the rest of the secret unredacted; terminating on the
+//   explicit closing delimiter instead lets the run span inner entities while
+//   still ending at the real closing quote. The lazy quantifier bounded by a
+//   literal closing delimiter avoids catastrophic backtracking.
 const assignmentPattern = new RegExp(
   '(' + ANYQUOTE + '?' + labelGroup + ANYQUOTE + '?\\s*[:=]\\s*)' + // group 1: label + separator (kept)
     '(' +
-    '&quot;[^&]*&quot;' + // entity double-quoted value (htmlextra native shape)
-    '|&#34;[^&]*&#34;' + // entity double-quoted value (numeric form)
+    '&quot;[\\s\\S]*?&quot;' + // entity double-quoted value (htmlextra native shape)
+    '|&#34;[\\s\\S]*?&#34;' + // entity double-quoted value (numeric form)
     '|"[^"]*"' + // literal double-quoted value
-    '|&#39;[^&]*&#39;' + // entity single-quoted value
-    '|&apos;[^&]*&apos;' + // entity single-quoted value (named form)
+    '|&#39;[\\s\\S]*?&#39;' + // entity single-quoted value
+    '|&apos;[\\s\\S]*?&apos;' + // entity single-quoted value (named form)
     "|'[^']*'" + // literal single-quoted value
     '|[^\\s"\'<>&;]+' + // or a bare token (stop at whitespace/quote/tag/entity/; chars)
     ')',

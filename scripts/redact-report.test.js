@@ -117,6 +117,32 @@ check('html-escaped numeric-entity secret is redacted', () => {
   assert.ok(out.includes('[REDACTED]'), 'expected [REDACTED] in output');
 });
 
+// (5c) Escaped value that itself CONTAINS an inner HTML entity. htmlextra
+//      escapes '&', '<', '>' inside body/header values, so a secret like
+//      abc&def123 renders as &quot;...abc&amp;def123...&quot;. The entity-quoted
+//      run must span the inner entity and terminate on the CLOSING quote, not
+//      stop at the first '&' (which would leak the tail of the secret).
+check('escaped value containing an inner entity is redacted', () => {
+  const input = '<pre>{ &quot;token&quot;: &quot;abc&amp;def123&quot; }</pre>';
+  const out = redact(input, 'escaped-inner-amp');
+  assert.ok(out.includes('[REDACTED]'), 'expected [REDACTED] in output');
+  assert.ok(!out.includes('abc&amp;def123'), 'full escaped secret must not survive');
+  assert.ok(!out.includes('def123'), 'secret tail after the inner entity must not survive');
+  assert.ok(out.includes('&quot;token&quot;'), 'escaped label must stay readable');
+  assert.ok(out.includes('&quot;[REDACTED]&quot;'), 'value stays entity-quoted');
+});
+
+// (5d) Same for an inner &gt;/&lt; entity (escaped '>' / '<').
+check('escaped value containing &gt;/&lt; is redacted', () => {
+  const gt = redact('<pre>&quot;secret&quot;: &quot;ab&gt;cd&quot;</pre>', 'escaped-inner-gt');
+  assert.ok(gt.includes('[REDACTED]'), 'expected [REDACTED] in &gt; output');
+  assert.ok(!gt.includes('ab&gt;cd'), 'full &gt; secret must not survive');
+  assert.ok(!gt.match(/&quot;ab&gt;cd&quot;/), 'secret value must not survive');
+  const lt = redact('<pre>&#34;secret&#34;: &#34;a&lt;b&amp;c&#34;</pre>', 'escaped-inner-lt');
+  assert.ok(lt.includes('[REDACTED]'), 'expected [REDACTED] in &lt; output');
+  assert.ok(!lt.includes('a&lt;b&amp;c'), 'full &lt;/&amp; secret must not survive');
+});
+
 // (6) Basic-auth credential is fully masked, not just the scheme word. A
 //     plaintext-only fix that stops at whitespace would leave the base64 blob.
 check('basic auth credential is redacted', () => {
