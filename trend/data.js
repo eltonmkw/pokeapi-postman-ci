@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793319997582,
+  "lastUpdate": 1793320343193,
   "repoUrl": "https://github.com/eltonmkw/pokeapi-postman-ci",
   "entries": {
     "PokéAPI collection trend": [
@@ -350,6 +350,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "Avg response time",
             "value": 62,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "eltonmkw@gmail.com",
+            "name": "Elton Mah",
+            "username": "eltonmkw"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7befb5155342e836009e0bb368aad482ba2572aa",
+          "message": "docs: simplify README and refresh CI details (#14)",
+          "timestamp": "2026-10-30T08:32:03+08:00",
+          "tree_id": "f0ba449b8e26e9a8ab886448ebdf80a1a116626c",
+          "url": "https://github.com/eltonmkw/pokeapi-postman-ci/commit/7befb5155342e836009e0bb368aad482ba2572aa"
+        },
+        "date": 1793320342581,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Failed assertions",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Failed requests",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Avg response time",
+            "value": 64,
             "unit": "ms"
           }
         ]
