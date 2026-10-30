@@ -288,6 +288,102 @@
 			]
 		},
 		{
+			"name": "ability",
+			"item": [
+				{
+					"name": "Get ability: static - shape and Pikachu relationship",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status code is 200', function () {",
+									"    pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"const jsonData = pm.response.json();",
+									"",
+									"// Scenario: Ability resource shape and the documented Pikachu relationship.",
+									"// Source: PokeAPI Ability / AbilityEffectChange / AbilityPokemon.",
+									"pm.test('id is an integer', function () {",
+									"    pm.expect(jsonData.id).to.be.a('number');",
+									"    pm.expect(Number.isInteger(jsonData.id)).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"name is 'static'\", function () {",
+									"    pm.expect(jsonData.name).to.eql('static');",
+									"});",
+									"",
+									"pm.test('is_main_series is a boolean', function () {",
+									"    pm.expect(jsonData.is_main_series).to.be.a('boolean');",
+									"});",
+									"",
+									"pm.test('effect_entries is an array', function () {",
+									"    pm.expect(jsonData.effect_entries).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('each effect entry has string effect and short_effect plus a language named reference', function () {",
+									"    jsonData.effect_entries.forEach(function (entry) {",
+									"        pm.expect(entry.effect).to.be.a('string');",
+									"        pm.expect(entry.short_effect).to.be.a('string');",
+									"        pm.expect(entry.language.name).to.be.a('string');",
+									"        pm.expect(entry.language.name.length).to.be.above(0);",
+									"        pm.expect(entry.language.url).to.be.a('string');",
+									"        pm.expect(entry.language.url).to.match(/^https?:\\/\\//);",
+									"        pm.expect(entry.language.url).to.include('/api/v2/language/');",
+									"    });",
+									"});",
+									"",
+									"pm.test('pokemon is an array', function () {",
+									"    pm.expect(jsonData.pokemon).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('each pokemon entry has is_hidden boolean, slot integer, and a pokemon named reference', function () {",
+									"    jsonData.pokemon.forEach(function (entry) {",
+									"        pm.expect(entry.is_hidden).to.be.a('boolean');",
+									"        pm.expect(entry.slot).to.be.a('number');",
+									"        pm.expect(Number.isInteger(entry.slot)).to.be.true;",
+									"        pm.expect(entry.pokemon.name).to.be.a('string');",
+									"        pm.expect(entry.pokemon.name.length).to.be.above(0);",
+									"        pm.expect(entry.pokemon.url).to.be.a('string');",
+									"        pm.expect(entry.pokemon.url).to.match(/^https?:\\/\\//);",
+									"        pm.expect(entry.pokemon.url).to.include('/api/v2/pokemon/');",
+									"    });",
+									"});",
+									"",
+									"pm.test(\"pokemon list includes 'pikachu'\", function () {",
+									"    const names = jsonData.pokemon.map(function (entry) {",
+									"        return entry.pokemon.name;",
+									"    });",
+									"    pm.expect(names).to.include('pikachu');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v2/ability/static/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"ability",
+								"static",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "pagination",
 			"event": [
 				{
@@ -445,6 +541,88 @@
 								{
 									"key": "offset",
 									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "pagination-unnamed",
+			"item": [
+				{
+					"name": "Unnamed-list envelope - evolution-chain list",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Scenario: the APIResourceList (unnamed) list envelope, distinct from the",
+									"// NamedAPIResourceList the pagination folder asserts for pokemon lists. This",
+									"// request lives in its own folder so the pagination folder-level named-ref",
+									"// script does not run against results that intentionally have no name.",
+									"// Source: PokeAPI APIResourceList { count, next, previous, results:[{url}] }.",
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.test('status code is 200', function () {",
+									"    pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"",
+									"pm.test('count is an integer', function () {",
+									"    pm.expect(jsonData.count).to.be.a('number');",
+									"    pm.expect(Number.isInteger(jsonData.count)).to.be.true;",
+									"});",
+									"",
+									"pm.test('body has next and previous properties', function () {",
+									"    pm.expect(jsonData).to.have.property('next');",
+									"    pm.expect(jsonData).to.have.property('previous');",
+									"});",
+									"",
+									"pm.test('results is an array', function () {",
+									"    pm.expect(jsonData.results).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('results length matches the requested limit of 3', function () {",
+									"    pm.expect(jsonData.results).to.have.lengthOf(3);",
+									"});",
+									"",
+									"pm.test('each result is a valid unnamed reference', function () {",
+									"    jsonData.results.forEach(function (result) {",
+									"        pm.expect(result).to.not.have.property('name');",
+									"        pm.expect(result.url).to.be.a('string');",
+									"        pm.expect(result.url).to.match(/^https?:\\/\\//);",
+									"        pm.expect(result.url).to.include('/api/v2/evolution-chain/');",
+									"    });",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v2/evolution-chain/?limit=3&offset=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v2",
+								"evolution-chain",
+								""
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "3"
+								},
+								{
+									"key": "offset",
+									"value": "0"
 								}
 							]
 						}
