@@ -61,5 +61,6 @@ must be exported and committed to reach CI.
 ## Guides
 
 - [API testing](docs/api-testing.md): conventions and adding tests.
+- [Allure report](docs/reporting/allure.md): the Allure reporter, its CI artifact, and how to disable it.
 - [Troubleshooting](docs/troubleshooting.md): reading reports and investigating failures.
 - [QA playbook](AGENTS.md): scenario planning, assertions, and flaky-run triage.
