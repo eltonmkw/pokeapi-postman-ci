@@ -59,7 +59,7 @@ jobs:
       # published to the gh-pages root so the bare Pages URL shows the latest
       # test results.
       - name: Install Newman (pinned)
-        run: npm install -g newman@6.2.3 newman-reporter-htmlextra@1.23.1
+        run: npm install -g newman@6.2.3 newman-reporter-htmlextra@1.23.1 newman-reporter-allure@2.15.1 allure-commandline@2.46.1
 
       # Same command + reporters as the local run. The CLI reporter only writes
       # to stdout, so stdout is teed into reports/pokeapi.cli.txt to capture the
@@ -71,13 +71,41 @@ jobs:
         run: |
           set -o pipefail
           newman run postman/pokeapi.postman_collection.json \
-            --reporters cli,junit,json,htmlextra \
+            --reporters cli,junit,json,htmlextra,allure \
             --reporter-junit-export reports/pokeapi.junit.xml \
             --reporter-json-export reports/pokeapi.results.json \
             --reporter-htmlextra-export reports/pokeapi.report.html \
             --reporter-htmlextra-title "PokéAPI CI results" \
             --reporter-htmlextra-browserTitle "PokéAPI CI results" \
+            --reporter-allure-export reports/allure/results \
             | tee reports/pokeapi.cli.txt
+
+      # Turn the raw Allure results (JSON written per test during the single
+      # Newman run above) into a browsable static HTML report. This is a
+      # SEPARATE step from 'Run collection' with if: always() so a red run still
+      # produces the report; it only reads reports/allure/results and writes
+      # reports/allure/report, so it cannot alter the job's pass/fail. The
+      # allure binary comes from allure-commandline on the global install; the
+      # runner's bundled JDK satisfies the CLI's Java requirement. --clean wipes
+      # any stale output in the report dir before regenerating.
+      - name: Generate Allure report
+        if: always()
+        shell: bash
+        run: npx allure generate reports/allure/results --clean -o reports/allure/report
+
+      # Publish the generated Allure report as a downloadable Actions artifact.
+      # if: always() so failing runs still upload it. Artifact-only on purpose:
+      # Allure is intentionally NOT wired into the GitHub Pages deployment (which
+      # serves the single-root htmlextra index.html) or the gh-pages trend store;
+      # see docs/reporting/allure.md. Pinned by the SAME commit SHA (v4.4.3) the
+      # workflow already uses for upload-artifact.
+      - name: Upload Allure report
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: pokeapi-allure-report
+          path: reports/allure/report
+          if-no-files-found: warn
 
       # Additive job summary. This is a SEPARATE step from 'Run collection' so
       # it never alters or swallows that step's exit code: a failed assertion
