@@ -92,9 +92,21 @@ function hostIsAllowed(value) {
   if (trimmed === '') {
     return true;
   }
-  // Allow the raw placeholder token anywhere (bare or as a URL prefix).
-  if (trimmed === '{{base_url}}' || trimmed.indexOf('{{base_url}}') === 0) {
+  // Allow the raw placeholder token, but only when it stands alone or is a true
+  // URL prefix: the token must be the whole string or be immediately followed
+  // by '/', '?', or ':' (path, query, or port). This blocks a host-smuggling
+  // suffix like '{{base_url}}.evil.example.com', which would otherwise resolve
+  // to a different host at request time.
+  if (trimmed === '{{base_url}}') {
     return true;
+  }
+  if (trimmed.indexOf('{{base_url}}') === 0) {
+    const nextChar = trimmed.charAt('{{base_url}}'.length);
+    if (nextChar === '/' || nextChar === '?' || nextChar === ':') {
+      return true;
+    }
+    // Any other suffix (e.g. '.evil.example.com') is a host smuggle: fall
+    // through so the value is validated as a concrete host below (and flagged).
   }
   // A bare host token like 'pokeapi.co'.
   if (trimmed === ALLOWED_HOST) {

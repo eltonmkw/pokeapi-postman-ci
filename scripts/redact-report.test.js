@@ -95,11 +95,56 @@ check('clean report is unchanged (no over-redaction)', () => {
   assert.ok(!out.includes('[REDACTED]'), 'clean report must not gain any [REDACTED]');
 });
 
-// (5) Idempotency: redacting already-redacted output yields the same output.
+// (5) HTML-entity-encoded JSON body (the shape htmlextra actually emits).
+//     htmlextra HTML-escapes request/response bodies, so a leaked key renders
+//     as &quot;api_key&quot;: &quot;SECRET&quot;. This MUST still be masked; a
+//     plaintext-only redactor would miss it and publish the secret.
+check('html-escaped JSON body secret is redacted', () => {
+  const input = '<pre>{ &quot;api_key&quot;: &quot;SECRET_ABC123&quot; }</pre>';
+  const out = redact(input, 'escaped-json');
+  assert.ok(out.includes('[REDACTED]'), 'expected [REDACTED] in output');
+  assert.ok(!out.includes('SECRET_ABC123'), 'escaped secret value must not survive');
+  // The entity-encoded quotes must be preserved so the HTML stays valid.
+  assert.ok(out.includes('&quot;api_key&quot;'), 'escaped label must stay readable');
+  assert.ok(out.includes('&quot;[REDACTED]&quot;'), 'value stays entity-quoted');
+});
+
+// (5b) Numeric entity form (&#34;) for the quotes is also masked.
+check('html-escaped numeric-entity secret is redacted', () => {
+  const input = '<pre>&#34;secret&#34;: &#34;TOPSECRET987&#34;</pre>';
+  const out = redact(input, 'escaped-num');
+  assert.ok(!out.includes('TOPSECRET987'), 'numeric-entity secret value must not survive');
+  assert.ok(out.includes('[REDACTED]'), 'expected [REDACTED] in output');
+});
+
+// (6) Basic-auth credential is fully masked, not just the scheme word. A
+//     plaintext-only fix that stops at whitespace would leave the base64 blob.
+check('basic auth credential is redacted', () => {
+  const out = redact('<p>authorization: Basic dXNlcjpwYXNzd29yZA==</p>', 'basic');
+  assert.ok(out.includes('[REDACTED]'), 'expected [REDACTED] in output');
+  assert.ok(!out.includes('dXNlcjpwYXNzd29yZA'), 'raw basic credential must not survive');
+  assert.ok(!out.includes('Basic dXNlcjpwYXNz'), 'scheme + credential must not survive');
+});
+
+// (7) The newly-covered labels (cookie, session, password) are masked.
+check('cookie / session / password values are redacted', () => {
+  const cookie = redact('<td>cookie: session=abc123secretvalue</td>', 'cookie');
+  assert.ok(!cookie.includes('abc123secretvalue'), 'cookie value must not survive');
+  const session = redact('<td>session: sess_9f8e7d6c5b4a3210</td>', 'session');
+  assert.ok(!session.includes('sess_9f8e7d6c5b4a3210'), 'session value must not survive');
+  const password = redact('<td>password: hunter2longvalue</td>', 'password');
+  assert.ok(!password.includes('hunter2longvalue'), 'password value must not survive');
+});
+
+// (8) Idempotency: redacting already-redacted output yields the same output,
+//     including the HTML-escaped and Basic-auth shapes.
 check('redaction is idempotent', () => {
   const dirty = [
     '<p>Authorization: Bearer abc123tokenVALUE</p>',
+    '<p>authorization: Basic dXNlcjpwYXNzd29yZA==</p>',
     '<td>x-api-key: 9f8e7d6c5b4a</td>',
+    '<pre>{ &quot;api_key&quot;: &quot;SECRET_ABC123&quot; }</pre>',
+    '<td>password: hunter2longvalue</td>',
     '<span>jane.doe@example.com</span>',
   ].join('\n');
   const once = redact(dirty, 'idem-once');

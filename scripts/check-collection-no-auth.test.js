@@ -148,6 +148,33 @@ check('off-host base_url variable fails (non-zero)', () => {
   assert.notStrictEqual(res.code, 0, 'expected non-zero for off-host base_url');
 });
 
+// (6b) A URL that smuggles a host onto the {{base_url}} token via a suffix
+//      ('{{base_url}}.evil.example.com') must NOT be treated as on-host -> non-zero.
+check('{{base_url}}-prefix host smuggle fails (non-zero)', () => {
+  const c = cloneReal();
+  const req = firstRequestItem(c.item);
+  req.request.url = {
+    raw: '{{base_url}}.evil.example.com/api/v2/pokemon/pikachu/',
+    host: ['{{base_url}}.evil.example.com'],
+    path: ['api', 'v2', 'pokemon', 'pikachu', ''],
+  };
+  const res = lintObject(c, 'baseurl-smuggle');
+  assert.notStrictEqual(res.code, 0, 'expected non-zero for {{base_url}}.evil host smuggle');
+});
+
+// (6c) A legitimate {{base_url}} URL (token followed by a path) still passes -> exit 0.
+check('legitimate {{base_url}} URL passes (exit 0)', () => {
+  const c = cloneReal();
+  const req = firstRequestItem(c.item);
+  req.request.url = {
+    raw: '{{base_url}}/api/v2/pokemon/pikachu/',
+    host: ['{{base_url}}'],
+    path: ['api', 'v2', 'pokemon', 'pikachu', ''],
+  };
+  const res = lintObject(c, 'baseurl-ok');
+  assert.strictEqual(res.code, 0, `expected exit 0 for legit {{base_url}} URL, got ${res.code}: ${res.output}`);
+});
+
 // (7) An explicit {"type":"noauth"} auth block is allowed -> exit 0.
 check('explicit noauth block passes (exit 0)', () => {
   const c = cloneReal();

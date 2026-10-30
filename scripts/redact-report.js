@@ -18,13 +18,22 @@
  *   2  usage/read error
  *
  * Design goals:
- *   - Conservative: redact clearly-labelled secrets (Bearer tokens, api-key /
- *     authorization / token / secret assignments) and email addresses, NOT
- *     arbitrary alphanumeric strings. The normally-useful report (status codes,
- *     'pikachu', assertion names) must survive untouched.
+ *   - Conservative: redact clearly-labelled secrets (Bearer / Basic tokens,
+ *     api-key / authorization / token / secret / cookie / session / password
+ *     assignments) and email addresses, NOT arbitrary alphanumeric strings. The
+ *     normally-useful report (status codes, 'pikachu', assertion names) must
+ *     survive untouched.
  *   - Idempotent: running twice must not corrupt already-redacted output. The
  *     patterns never match the literal placeholder [REDACTED], so re-running is
  *     a no-op on already-clean text.
+ *   - HTML-encoding aware: htmlextra HTML-escapes request/response bodies and
+ *     header tables, so a leaked `"api_key": "SECRET"` arrives in the report as
+ *     `&quot;api_key&quot;: &quot;SECRET&quot;`. Every label/value pattern below
+ *     therefore accepts BOTH literal quote characters and their HTML-entity
+ *     forms (&quot; &#34; &#39; &apos;) so the escaped shape - the one the
+ *     report is actually in - is matched and masked. Matching happens directly
+ *     on the escaped text (no global decode/re-encode) so legitimate HTML tags
+ *     are never corrupted and the output stays valid HTML.
  */
 'use strict';
 
@@ -57,34 +66,74 @@ function mask(pattern, replacement) {
   });
 }
 
-// (1) Bearer tokens: "Bearer <token>". The token charset covers base64url and
-//     JWT-ish values. Case-insensitive on the "Bearer" scheme keyword.
-mask(/Bearer\s+[A-Za-z0-9._~+/-]+=*/gi, REDACTED);
+// Any quote (literal or HTML-entity), used as an optional wrapper around labels.
+const ANYQUOTE = '(?:"|&quot;|&#34;|\'|&#39;|&apos;)';
+
+// (1) Bearer / Basic scheme tokens: "Bearer <token>" / "Basic <base64>". The
+//     token charset covers base64url, standard base64 padding, and JWT-ish
+//     values. Case-insensitive on the scheme keyword. Mirroring Bearer with a
+//     Basic alternative means the base64 credential after `Basic` is consumed
+//     too, instead of leaving it published after only the scheme word is masked.
+mask(/(?:Bearer|Basic)\s+[A-Za-z0-9._~+/-]+=*/gi, REDACTED);
 
 // (2) Labelled secret/token assignments. Match a known sensitive label, an
-//     optional quoting around it, a separator (':' or '='), then the value
-//     (quoted or unquoted). Only the VALUE is replaced so the label stays
-//     readable in the report (e.g. `api_key: [REDACTED]`), which also keeps the
-//     operation idempotent because the placeholder is not a value we re-match.
-//     Labels: api[-_]?key, apikey, authorization, access[-_]?token, token, secret.
-const labelGroup = '(?:api[-_]?key|apikey|authorization|access[-_]?token|token|secret)';
-// label + optional surrounding quotes + separator + optional whitespace, then value.
+//     optional quoting around it (literal OR HTML-entity), a separator (':' or
+//     '='), then the value (quoted or unquoted, literal OR HTML-entity). Only
+//     the VALUE is replaced so the label stays readable in the report (e.g.
+//     `api_key: [REDACTED]`), which also keeps the operation idempotent because
+//     the placeholder is not a value we re-match.
+//     Labels: api[-_]?key, apikey, authorization, access[-_]?token, token,
+//             secret, cookie, session, password.
+const labelGroup =
+  '(?:api[-_]?key|apikey|authorization|access[-_]?token|token|secret|cookie|session|password)';
+// label + optional surrounding quotes (literal/entity) + separator + optional
+// whitespace, then value. The value alternatives, in priority order:
+//   - an entity-double-quoted run: &quot;...&quot; (the htmlextra shape)
+//   - a literal double-quoted run: "..."
+//   - an entity/literal single-quoted run
+//   - a bare token that stops at whitespace, a literal quote, a tag bracket
+//     (< >), ';', or the start of an HTML entity ('&'). A bare ESCAPED value
+//     begins with '&quot;' and is caught by the quoted alternatives above, so a
+//     leading '&' is still a safe stop char for the genuinely-unquoted case.
 const assignmentPattern = new RegExp(
-  '("?' + labelGroup + '"?\\s*[:=]\\s*)' + // group 1: label + separator (kept)
+  '(' + ANYQUOTE + '?' + labelGroup + ANYQUOTE + '?\\s*[:=]\\s*)' + // group 1: label + separator (kept)
     '(' +
-    '"[^"]*"' + // a double-quoted value
-    "|'[^']*'" + // or a single-quoted value
-    '|[^\\s"\'<>&;]+' + // or a bare token (stop at whitespace/quote/tag/entity chars)
+    '&quot;[^&]*&quot;' + // entity double-quoted value (htmlextra native shape)
+    '|&#34;[^&]*&#34;' + // entity double-quoted value (numeric form)
+    '|"[^"]*"' + // literal double-quoted value
+    '|&#39;[^&]*&#39;' + // entity single-quoted value
+    '|&apos;[^&]*&apos;' + // entity single-quoted value (named form)
+    "|'[^']*'" + // literal single-quoted value
+    '|[^\\s"\'<>&;]+' + // or a bare token (stop at whitespace/quote/tag/entity/; chars)
     ')',
   'gi'
 );
 html = html.replace(assignmentPattern, function (whole, keep, value) {
-  // Don't re-redact an already-redacted value (idempotency).
-  if (value === REDACTED || value === '"' + REDACTED + '"' || value === "'" + REDACTED + "'") {
+  // Don't re-redact an already-redacted value (idempotency). The placeholder may
+  // appear bare or wrapped in literal or entity quotes.
+  const wrappedForms = [
+    REDACTED,
+    '"' + REDACTED + '"',
+    "'" + REDACTED + "'",
+    '&quot;' + REDACTED + '&quot;',
+    '&#34;' + REDACTED + '&#34;',
+    '&#39;' + REDACTED + '&#39;',
+    '&apos;' + REDACTED + '&apos;',
+  ];
+  if (wrappedForms.indexOf(value) !== -1) {
     return whole;
   }
   substitutions += 1;
-  // Preserve surrounding quotes on the value if they were present.
+  // Preserve surrounding quotes on the value if they were present, keeping the
+  // original (literal or entity) quote form so the output encoding is unchanged.
+  const entityDouble = value.match(/^(&quot;|&#34;)([\s\S]*)(&quot;|&#34;)$/);
+  if (entityDouble && entityDouble[1] === entityDouble[3]) {
+    return keep + entityDouble[1] + REDACTED + entityDouble[3];
+  }
+  const entitySingle = value.match(/^(&#39;|&apos;)([\s\S]*)(&#39;|&apos;)$/);
+  if (entitySingle && entitySingle[1] === entitySingle[3]) {
+    return keep + entitySingle[1] + REDACTED + entitySingle[3];
+  }
   if (value[0] === '"' && value[value.length - 1] === '"') {
     return keep + '"' + REDACTED + '"';
   }
@@ -94,7 +143,8 @@ html = html.replace(assignmentPattern, function (whole, keep, value) {
   return keep + REDACTED;
 });
 
-// (3) Email addresses.
+// (3) Email addresses. The local part / domain charset matches plaintext
+//     emails; htmlextra does not entity-escape the characters an email contains.
 mask(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, REDACTED);
 
 try {
