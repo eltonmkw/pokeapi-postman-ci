@@ -293,6 +293,13 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Check out the source repo (for scripts/link-chart-to-reports.js). This
+      # job is separate from run-collection, so it needs its own source checkout;
+      # it lands in the default workspace while gh-pages goes under ghpages/.
+      # Pinned by SHA (v4.2.2).
+      - name: Checkout source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       # Check out the gh-pages branch (the data store: trend + archived reports)
       # into ./ghpages, keeping credentials so we can push the archive back.
       # Pinned by SHA (v4.2.2).
@@ -371,11 +378,16 @@ jobs:
             echo '<!doctype html><title>No report</title><p>No report for this run. See the <a href="../">trend chart</a>.</p>' > site/report/index.html
           fi
 
-          # Rewrite the chart's click handler so a data point opens that run's
-          # archived report (reports/<sha>.html) when it exists, else the commit
-          # URL. The generated chart uses: const url = dataset[index].commit.url;
+          # Rewrite the click handler in BOTH chart copies so a data point opens
+          # that run's archived report when it exists, else the commit URL.
+          #  - root chart (site/index.html): reports live at ./reports/
+          #  - /trend/ chart (site/trend/index.html): one level deeper, so the
+          #    shared archive is at ../reports/
           if [ -f site/index.html ]; then
-            node scripts/link-chart-to-reports.js site/index.html site/reports
+            node scripts/link-chart-to-reports.js site/index.html site/reports './reports/'
+          fi
+          if [ -f site/trend/index.html ]; then
+            node scripts/link-chart-to-reports.js site/trend/index.html site/reports '../reports/'
           fi
 
           echo "Assembled site:"; find site -maxdepth 2 -type f | sort
