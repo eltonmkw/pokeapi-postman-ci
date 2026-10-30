@@ -79,6 +79,23 @@ jobs:
             --reporter-htmlextra-browserTitle "PokéAPI CI results" \
             | tee reports/pokeapi.cli.txt
 
+      # Reporter-specific JUnit copy (Reporter 3: dorny/test-reporter).
+      # The canonical JUnit at reports/pokeapi.junit.xml is shared with the job
+      # summary and trend steps. To keep this reporter independently
+      # enable/disable/removable and conflict-free with other reporters, copy the
+      # same Newman JUnit output into a reporter-owned path, reports/junit/.
+      # No second Newman run: this reuses the single run's output. if: always()
+      # so the copy also happens on a failing run. This step never changes the
+      # 'Run collection' exit code.
+      - name: Stage JUnit for dorny/test-reporter
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p reports/junit
+          if [ -f reports/pokeapi.junit.xml ]; then
+            cp reports/pokeapi.junit.xml reports/junit/pokeapi.junit.xml
+          fi
+
       # Additive job summary. This is a SEPARATE step from 'Run collection' so
       # it never alters or swallows that step's exit code: a failed assertion
       # still fails the job via 'Run collection'. if: always() so a red run
@@ -204,11 +221,17 @@ jobs:
             reports/pokeapi.junit.xml
             reports/pokeapi.results.json
             reports/pokeapi.report.html
+            reports/junit/pokeapi.junit.xml
           if-no-files-found: warn
 
       # Per-run readable report: parse the JUnit XML and publish it as a check
       # so pass/fail per request is visible in the Actions UI without downloading
-      # the artifact. Runs even on failure. Pinned by commit SHA (v1.9.1).
+      # the artifact. Runs even on failure. Pinned by commit SHA (v3.0.0); v3
+      # runs on the Node 24 action runtime, which ubuntu-latest provides (this is
+      # independent of the setup-node step above, which only provisions Node for
+      # the Newman npm install). Reads the reporter-owned copy at
+      # reports/junit/pokeapi.junit.xml so this reporter stays isolated from the
+      # shared reports/pokeapi.junit.xml.
       # Skipped for pull requests from a fork: the token is read-only there even
       # though the workflow requests checks: write, so creating the check run
       # fails with an authorization error that fail-on-error does not suppress and
@@ -216,10 +239,10 @@ jobs:
       # pushes, schedule, and manual dispatch.
       - name: Publish per-run test report
         if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
-        uses: dorny/test-reporter@31a54ee7ebcacc03a09ea97a7e5465a47b84aea5 # v1.9.1
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
         with:
           name: PokéAPI test results
-          path: reports/pokeapi.junit.xml
+          path: reports/junit/pokeapi.junit.xml
           reporter: java-junit
           fail-on-error: false
 

@@ -63,3 +63,4 @@ must be exported and committed to reach CI.
 - [API testing](docs/api-testing.md): conventions and adding tests.
 - [Troubleshooting](docs/troubleshooting.md): reading reports and investigating failures.
 - [QA playbook](AGENTS.md): scenario planning, assertions, and flaky-run triage.
+- [Reporting: dorny/test-reporter](docs/reporting/dorny-test-reporter.md): JUnit-based GitHub Checks integration.
