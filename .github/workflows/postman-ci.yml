@@ -269,10 +269,17 @@ jobs:
   # commit is pushed with GITHUB_TOKEN, so the site is deployed here instead.
   #
   # The site is assembled fresh each run:
-  #   /            -> the latest htmlextra report (index.html)
-  #   /trend/      -> the trend chart + history, read from the gh-pages branch
-  #                   (the benchmark action in run-collection still writes the
-  #                    history there; gh-pages is the data store, not the server)
+  #   /                     -> the TREND CHART (landing page). Clicking a point
+  #                            opens that run's archived htmlextra report.
+  #   /report/              -> the latest run's htmlextra report
+  #   /reports/<sha>.html   -> per-run archived reports (one per main run)
+  #   /trend/               -> the trend chart again, kept for back-compat
+  #
+  # Per-run reports are archived on the gh-pages branch under reports/, so they
+  # persist across runs (GitHub Actions is stateless). The chart's built-in
+  # onClick normally opens the commit URL; a post-process step rewrites it to
+  # open /reports/<sha>.html when an archived report exists for that commit,
+  # falling back to the commit URL otherwise (e.g. historical points).
   #
   # Gated to pushes on main. Needs the run-collection job (and its trend step)
   # to finish first so gh-pages holds the newest data point.
@@ -286,9 +293,17 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # Check out the gh-pages branch (the trend data store) into ./ghpages.
+      # Check out the source repo (for scripts/link-chart-to-reports.js). This
+      # job is separate from run-collection, so it needs its own source checkout;
+      # it lands in the default workspace while gh-pages goes under ghpages/.
       # Pinned by SHA (v4.2.2).
-      - name: Checkout gh-pages (trend data)
+      - name: Checkout source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # Check out the gh-pages branch (the data store: trend + archived reports)
+      # into ./ghpages, keeping credentials so we can push the archive back.
+      # Pinned by SHA (v4.2.2).
+      - name: Checkout gh-pages (data store)
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: gh-pages
@@ -303,25 +318,78 @@ jobs:
           path: downloaded-report
         continue-on-error: true
 
-      # Assemble the site directory: report at root, trend subtree under /trend/.
+      # Archive this run's report on gh-pages as reports/<sha>.html so the trend
+      # point for this commit has a stable report URL to link to. Commit + push
+      # with a small retry in case the benchmark action moved gh-pages meanwhile.
+      - name: Archive report on gh-pages
+        if: hashFiles('downloaded-report/pokeapi.report.html') != ''
+        shell: bash
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git -C ghpages config user.name "github-actions[bot]"
+          git -C ghpages config user.email "github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git -C ghpages fetch origin gh-pages
+            git -C ghpages reset --hard origin/gh-pages
+            mkdir -p ghpages/reports
+            cp downloaded-report/pokeapi.report.html "ghpages/reports/${SHA}.html"
+            git -C ghpages add "reports/${SHA}.html"
+            if git -C ghpages diff --cached --quiet; then
+              echo "Report for ${SHA} already archived."
+              break
+            fi
+            git -C ghpages commit -m "Archive test report for ${SHA}"
+            if git -C ghpages push origin HEAD:gh-pages; then
+              echo "Archived report on attempt ${attempt}."
+              break
+            fi
+            echo "Push rejected (gh-pages moved); retry ${attempt}/3..."
+            sleep 3
+          done
+
+      # Assemble the site: trend chart at root (with click targets rewritten to
+      # per-run reports), latest report at /report/, all archived reports at
+      # /reports/, and the chart again at /trend/ for back-compat.
       - name: Assemble site
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p site
+          mkdir -p site site/report site/reports site/trend
           # .nojekyll so GitHub serves files as-is (no Jekyll processing).
           touch site/.nojekyll
-          # Root = latest report. Fall back to a placeholder if it is missing.
-          if [ -f downloaded-report/pokeapi.report.html ]; then
-            cp downloaded-report/pokeapi.report.html site/index.html
-          else
-            echo '<!doctype html><title>PokéAPI CI</title><p>No report for this run. See <a href="./trend/">trend chart</a>.</p>' > site/index.html
-          fi
-          # /trend/ = the committed benchmark chart + history from gh-pages.
+
+          # Trend chart -> root and /trend/.
           if [ -d ghpages/trend ]; then
-            mkdir -p site/trend
             cp -R ghpages/trend/. site/trend/
+            cp -R ghpages/trend/. site/
           fi
+
+          # All archived per-run reports -> /reports/.
+          if [ -d ghpages/reports ]; then
+            cp -R ghpages/reports/. site/reports/
+          fi
+
+          # Latest report -> /report/index.html (convenience, always current run).
+          if [ -f downloaded-report/pokeapi.report.html ]; then
+            cp downloaded-report/pokeapi.report.html site/report/index.html
+          else
+            echo '<!doctype html><title>No report</title><p>No report for this run. See the <a href="../">trend chart</a>.</p>' > site/report/index.html
+          fi
+
+          # Rewrite the click handler in BOTH chart copies so a data point opens
+          # that run's archived report when it exists, else the commit URL.
+          #  - root chart (site/index.html): reports live at ./reports/
+          #  - /trend/ chart (site/trend/index.html): one level deeper, so the
+          #    shared archive is at ../reports/
+          if [ -f site/index.html ]; then
+            node scripts/link-chart-to-reports.js site/index.html site/reports './reports/'
+          fi
+          if [ -f site/trend/index.html ]; then
+            node scripts/link-chart-to-reports.js site/trend/index.html site/reports '../reports/'
+          fi
+
           echo "Assembled site:"; find site -maxdepth 2 -type f | sort
 
       # Configure Pages (switches the repo's build type to "workflow" if needed).

@@ -348,11 +348,24 @@ average response time.
 On pushes to `main`, the run also produces a rich, standalone HTML report with
 [`newman-reporter-htmlextra`](https://github.com/DannyDainton/newman-reporter-htmlextra)
 and publishes the public site via the **official GitHub Pages deployment**
-(`actions/deploy-pages`). The bare Pages URL shows the **latest run's** detailed
-results — every request, its response, and each assertion:
+(`actions/deploy-pages`). The site layout:
 
-- **Latest report:** `https://<owner>.github.io/<repo>/`
-- **Trend chart (history):** `https://<owner>.github.io/<repo>/trend/`
+- **Landing page (trend chart):** `https://<owner>.github.io/<repo>/` — the
+  interactive trend chart. **Click any data point** to open that run's detailed
+  htmlextra report.
+- **Latest report:** `https://<owner>.github.io/<repo>/report/`
+- **Per-run report archive:** `https://<owner>.github.io/<repo>/reports/<commit-sha>.html`
+- **Trend chart (also):** `https://<owner>.github.io/<repo>/trend/` (kept for
+  back-compat; identical to the root)
+
+**Clickable data points.** Each `main` run's report is archived on the
+`gh-pages` branch under `reports/<commit-sha>.html`, so it persists across runs.
+The deploy job runs [`scripts/link-chart-to-reports.js`](../scripts/link-chart-to-reports.js)
+to rewrite the chart's click handler: clicking a point opens that commit's
+archived report when one exists, and falls back to the GitHub commit page
+otherwise (e.g. points recorded before this feature existed). Report archiving
+grows the `gh-pages` branch by roughly half a megabyte per run; prune old
+`reports/*.html` entries periodically if the branch gets large.
 
 **Why a deploy job, not a branch push.** GitHub Pages' branch-publishing mode
 does *not* rebuild when the commit is pushed by a workflow using the default
