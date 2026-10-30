@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793320343193,
+  "lastUpdate": 1793320475014,
   "repoUrl": "https://github.com/eltonmkw/pokeapi-postman-ci",
   "entries": {
     "PokéAPI collection trend": [
@@ -389,6 +389,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "Avg response time",
             "value": 64,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "eltonmkw@gmail.com",
+            "name": "Elton Mah",
+            "username": "eltonmkw"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5ebaf3df2eb699ab0d18cfa1dda363240df7d3bc",
+          "message": "Merge pull request #13 from eltonmkw/add-expand-coverage-scenario\n\nAdd example scenario doc for the generate-api-tests hook",
+          "timestamp": "2026-10-30T08:34:02+08:00",
+          "tree_id": "91a5ebd8f55f21c34eac7d2a281495aafa91ade6",
+          "url": "https://github.com/eltonmkw/pokeapi-postman-ci/commit/5ebaf3df2eb699ab0d18cfa1dda363240df7d3bc"
+        },
+        "date": 1793320474367,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Failed assertions",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Failed requests",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Avg response time",
+            "value": 57,
             "unit": "ms"
           }
         ]
