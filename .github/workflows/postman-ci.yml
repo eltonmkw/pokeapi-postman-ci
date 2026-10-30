@@ -38,6 +38,61 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Layer 1: secret scan. Fail the whole workflow if gitleaks finds a committed
+  # secret anywhere in the repository or its history. This is the first line of
+  # defence against a credential ever reaching CI (and from there the public
+  # htmlextra report). gitleaks exits non-zero on detection by default, which
+  # fails this job -- no flag here turns a detection into a soft pass.
+  # ---------------------------------------------------------------------------
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      # gitleaks-action scans history, so it needs the full git log, not a
+      # shallow clone: fetch-depth: 0. Same checkout SHA pinned elsewhere (v4.2.2).
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      # Pinned by commit SHA (v2.3.9). gitleaks-action is free for public repos;
+      # an org account on a private repo would need GITLEAKS_LICENSE, which this
+      # public repo does not require. GITLEAKS_ENABLE_SUMMARY posts the scan
+      # result to the job summary -- it never dumps the environment or secrets.
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITLEAKS_ENABLE_SUMMARY: true
+
+  # ---------------------------------------------------------------------------
+  # Layer 4: collection no-auth gate. A dedicated, HTTP-free job that fails the
+  # PR if the collection ever gains an auth block, an Authorization / x-api-key
+  # header, or a host other than pokeapi.co. A non-zero exit from the linter
+  # fails the job; there is deliberately no continue-on-error and no '|| true'
+  # so a dirty collection can never slip through.
+  # ---------------------------------------------------------------------------
+  collection-no-auth:
+    name: Collection no-auth lint
+    runs-on: ubuntu-latest
+    steps:
+      # Same checkout SHA pinned elsewhere (v4.2.2).
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # Same setup-node SHA pinned elsewhere (v4.1.0). Node 22 LTS runs the
+      # zero-dependency linter.
+      - name: Set up Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '22'
+
+      # Hard gate: a non-zero exit (auth block / Authorization or x-api-key
+      # header / off-host) fails the job. Makes no HTTP calls, so CI request
+      # volume is unchanged.
+      - name: Lint collection for auth/PII leaks
+        run: node scripts/check-collection-no-auth.js postman/pokeapi.postman_collection.json
+
   run-collection:
     name: Run PokéAPI collection with Newman
     runs-on: ubuntu-latest
@@ -287,6 +342,13 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Check out the repo so scripts/redact-report.js (the Layer 5 publish-time
+      # redactor) is available in this job. deploy-pages previously only
+      # downloaded the report artifact; it now also needs the scripts/ tree.
+      # Same checkout SHA pinned elsewhere (v4.2.2).
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       # Download the htmlextra report produced by run-collection.
       # Pinned by SHA (v4.1.8).
       - name: Download HTML report
@@ -309,7 +371,9 @@ jobs:
           touch site/.nojekyll
 
           if [ -f downloaded-report/pokeapi.report.html ]; then
-            cp downloaded-report/pokeapi.report.html site/index.html
+            # Layer 5: redact secrets/PII out of the report on the way in, so the
+            # published index.html can never carry a leaked token or email.
+            node scripts/redact-report.js downloaded-report/pokeapi.report.html site/index.html
           else
             echo '<!doctype html><title>No report</title><p>No htmlextra report is available for this run.</p>' > site/index.html
           fi
