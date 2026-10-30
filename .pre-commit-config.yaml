@@ -1,0 +1,31 @@
+# Layer 2: local pre-commit guards (secret scan + collection no-auth lint).
+#
+# These hooks run on `git commit` so a secret or an auth-bearing collection is
+# caught BEFORE it is ever committed -- the local counterpart to the CI gates in
+# .github/workflows/postman-ci.yml.
+#
+# This needs the pre-commit framework installed locally. One-time setup:
+#   pip install pre-commit        # or: pipx install pre-commit
+#   pre-commit install            # wire it into this repo's git hooks
+# After that, the hooks below run automatically on every commit.
+repos:
+  # gitleaks: scan staged changes for committed secrets. Pinned to a release
+  # tag; a detection makes the hook fail and blocks the commit.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # Custom Layer 4 linter as a local hook: enforce the "unauthenticated public
+  # PokéAPI only" invariant on the collection. Runs only when a postman/*.json
+  # file is staged. language: system runs the zero-dependency Node script
+  # directly (no extra environment to build); pass_filenames: false because the
+  # script always lints the one known collection path.
+  - repo: local
+    hooks:
+      - id: check-collection-no-auth
+        name: Check collection has no auth/PII (no-auth lint)
+        language: system
+        entry: node scripts/check-collection-no-auth.js postman/pokeapi.postman_collection.json
+        pass_filenames: false
+        files: ^postman/.*\.json$

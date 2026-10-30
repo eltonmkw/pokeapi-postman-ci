@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Validate collection stays unauthenticated",
+      "trigger": "PostFileSave",
+      "matcher": "postman/.*\\.json$",
+      "action": {
+        "type": "agent",
+        "prompt": "The Postman collection was saved. Run the Layer 4 no-auth linter from the repo root: node scripts/check-collection-no-auth.js postman/pokeapi.postman_collection.json. If it exits 0, report that the collection is clean: no auth blocks, no Authorization/x-api-key headers, and the host is pokeapi.co only. If it exits non-zero, report each violation it printed (path/location and what is wrong) and explain that the collection must stay unauthenticated against the public PokéAPI so no secret or PII can ever leak into the public htmlextra report that gets published to GitHub Pages. Never weaken or disable the linter, and never weaken, remove, or skip the collection's Newman assertions to get green. PROPOSE a minimal fix (remove the auth block / credential header, or restore the host to pokeapi.co) rather than auto-applying it."
+      }
+    }
+  ]
+}

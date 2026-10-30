@@ -1,0 +1,167 @@
+#!/usr/bin/env node
+/*
+ * Layer 5 guard: redact secrets and PII from a Newman htmlextra HTML report
+ * BEFORE it is published to the public GitHub Pages site. Even though the
+ * collection is supposed to stay unauthenticated (enforced by Layer 4), this is
+ * a defense-in-depth backstop: if a credential, token, or email ever reaches
+ * the report body, this masks it so nothing sensitive is published.
+ *
+ * Usage:
+ *   node scripts/redact-report.js <input.html> <output.html>
+ *
+ * It reads the input HTML, replaces each sensitive match with the literal
+ * string [REDACTED], writes the result to the output path, and prints a short
+ * substitution-count summary.
+ *
+ * Exit codes:
+ *   0  success
+ *   2  usage/read error
+ *
+ * Design goals:
+ *   - Conservative: redact clearly-labelled secrets (Bearer / Basic tokens,
+ *     api-key / authorization / token / secret / cookie / session / password
+ *     assignments) and email addresses, NOT arbitrary alphanumeric strings. The
+ *     normally-useful report (status codes, 'pikachu', assertion names) must
+ *     survive untouched.
+ *   - Idempotent: running twice must not corrupt already-redacted output. The
+ *     patterns never match the literal placeholder [REDACTED], so re-running is
+ *     a no-op on already-clean text.
+ *   - HTML-encoding aware: htmlextra HTML-escapes request/response bodies and
+ *     header tables, so a leaked `"api_key": "SECRET"` arrives in the report as
+ *     `&quot;api_key&quot;: &quot;SECRET&quot;`. Every label/value pattern below
+ *     therefore accepts BOTH literal quote characters and their HTML-entity
+ *     forms (&quot; &#34; &#39; &apos;) so the escaped shape - the one the
+ *     report is actually in - is matched and masked. Matching happens directly
+ *     on the escaped text (no global decode/re-encode) so legitimate HTML tags
+ *     are never corrupted and the output stays valid HTML.
+ */
+'use strict';
+
+const fs = require('fs');
+
+const REDACTED = '[REDACTED]';
+
+const [, , inputPath, outputPath] = process.argv;
+
+if (!inputPath || !outputPath) {
+  console.error('Usage: redact-report.js <input.html> <output.html>');
+  process.exit(2);
+}
+
+let html;
+try {
+  html = fs.readFileSync(inputPath, 'utf8');
+} catch (err) {
+  console.error(`Could not read input at ${inputPath}: ${err.message}`);
+  process.exit(2);
+}
+
+let substitutions = 0;
+
+// Count and apply a replacement, tracking how many matches were masked.
+function mask(pattern, replacement) {
+  html = html.replace(pattern, function () {
+    substitutions += 1;
+    return replacement;
+  });
+}
+
+// Any quote (literal or HTML-entity), used as an optional wrapper around labels.
+const ANYQUOTE = '(?:"|&quot;|&#34;|\'|&#39;|&apos;)';
+
+// (1) Bearer / Basic scheme tokens: "Bearer <token>" / "Basic <base64>". The
+//     token charset covers base64url, standard base64 padding, and JWT-ish
+//     values. Case-insensitive on the scheme keyword. Mirroring Bearer with a
+//     Basic alternative means the base64 credential after `Basic` is consumed
+//     too, instead of leaving it published after only the scheme word is masked.
+mask(/(?:Bearer|Basic)\s+[A-Za-z0-9._~+/-]+=*/gi, REDACTED);
+
+// (2) Labelled secret/token assignments. Match a known sensitive label, an
+//     optional quoting around it (literal OR HTML-entity), a separator (':' or
+//     '='), then the value (quoted or unquoted, literal OR HTML-entity). Only
+//     the VALUE is replaced so the label stays readable in the report (e.g.
+//     `api_key: [REDACTED]`), which also keeps the operation idempotent because
+//     the placeholder is not a value we re-match.
+//     Labels: api[-_]?key, apikey, authorization, access[-_]?token, token,
+//             secret, cookie, session, password.
+const labelGroup =
+  '(?:api[-_]?key|apikey|authorization|access[-_]?token|token|secret|cookie|session|password)';
+// label + optional surrounding quotes (literal/entity) + separator + optional
+// whitespace, then value. The value alternatives, in priority order:
+//   - an entity-double-quoted run: &quot;...&quot; (the htmlextra shape)
+//   - a literal double-quoted run: "..."
+//   - an entity/literal single-quoted run
+//   - a bare token that stops at whitespace, a literal quote, a tag bracket
+//     (< >), ';', or the start of an HTML entity ('&'). A bare ESCAPED value
+//     begins with '&quot;' and is caught by the quoted alternatives above, so a
+//     leading '&' is still a safe stop char for the genuinely-unquoted case.
+//
+//   Each ENTITY-quoted run is bounded by its specific closing delimiter via a
+//   lazy '[\\s\\S]*?' up to the next closing quote entity, NOT '[^&]*'. The
+//   value delimiter is itself an entity ('&quot;' etc.), and htmlextra escapes
+//   '&', '<', '>' INSIDE body/header values, so a secret may legitimately
+//   contain '&amp;'/'&lt;'/'&gt;'. A '[^&]*' bound would stop at that first
+//   inner '&' and leak the rest of the secret unredacted; terminating on the
+//   explicit closing delimiter instead lets the run span inner entities while
+//   still ending at the real closing quote. The lazy quantifier bounded by a
+//   literal closing delimiter avoids catastrophic backtracking.
+const assignmentPattern = new RegExp(
+  '(' + ANYQUOTE + '?' + labelGroup + ANYQUOTE + '?\\s*[:=]\\s*)' + // group 1: label + separator (kept)
+    '(' +
+    '&quot;[\\s\\S]*?&quot;' + // entity double-quoted value (htmlextra native shape)
+    '|&#34;[\\s\\S]*?&#34;' + // entity double-quoted value (numeric form)
+    '|"[^"]*"' + // literal double-quoted value
+    '|&#39;[\\s\\S]*?&#39;' + // entity single-quoted value
+    '|&apos;[\\s\\S]*?&apos;' + // entity single-quoted value (named form)
+    "|'[^']*'" + // literal single-quoted value
+    '|[^\\s"\'<>&;]+' + // or a bare token (stop at whitespace/quote/tag/entity/; chars)
+    ')',
+  'gi'
+);
+html = html.replace(assignmentPattern, function (whole, keep, value) {
+  // Don't re-redact an already-redacted value (idempotency). The placeholder may
+  // appear bare or wrapped in literal or entity quotes.
+  const wrappedForms = [
+    REDACTED,
+    '"' + REDACTED + '"',
+    "'" + REDACTED + "'",
+    '&quot;' + REDACTED + '&quot;',
+    '&#34;' + REDACTED + '&#34;',
+    '&#39;' + REDACTED + '&#39;',
+    '&apos;' + REDACTED + '&apos;',
+  ];
+  if (wrappedForms.indexOf(value) !== -1) {
+    return whole;
+  }
+  substitutions += 1;
+  // Preserve surrounding quotes on the value if they were present, keeping the
+  // original (literal or entity) quote form so the output encoding is unchanged.
+  const entityDouble = value.match(/^(&quot;|&#34;)([\s\S]*)(&quot;|&#34;)$/);
+  if (entityDouble && entityDouble[1] === entityDouble[3]) {
+    return keep + entityDouble[1] + REDACTED + entityDouble[3];
+  }
+  const entitySingle = value.match(/^(&#39;|&apos;)([\s\S]*)(&#39;|&apos;)$/);
+  if (entitySingle && entitySingle[1] === entitySingle[3]) {
+    return keep + entitySingle[1] + REDACTED + entitySingle[3];
+  }
+  if (value[0] === '"' && value[value.length - 1] === '"') {
+    return keep + '"' + REDACTED + '"';
+  }
+  if (value[0] === "'" && value[value.length - 1] === "'") {
+    return keep + "'" + REDACTED + "'";
+  }
+  return keep + REDACTED;
+});
+
+// (3) Email addresses. The local part / domain charset matches plaintext
+//     emails; htmlextra does not entity-escape the characters an email contains.
+mask(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, REDACTED);
+
+try {
+  fs.writeFileSync(outputPath, html);
+} catch (err) {
+  console.error(`Could not write output to ${outputPath}: ${err.message}`);
+  process.exit(2);
+}
+
+console.log(`Redacted ${substitutions} sensitive match(es) from ${inputPath} -> ${outputPath}`);
