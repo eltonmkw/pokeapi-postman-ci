@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793319954095,
+  "lastUpdate": 1793319997582,
   "repoUrl": "https://github.com/eltonmkw/pokeapi-postman-ci",
   "entries": {
     "PokéAPI collection trend": [
@@ -311,6 +311,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "Avg response time",
             "value": 34,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "245459735+kiro-agent[bot]@users.noreply.github.com",
+            "name": "kiro-agent[bot]",
+            "username": "kiro-agent[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4c1ee326c0e45ee60abb8735df16c96705926e6d",
+          "message": "Add type and pagination test coverage (DRY envelope refactor) (#12)\n\nAdd a new 'types' folder with two requests:\n- Get type: ground - damage relations resolve as documented (status, id/name\n  types, six TypeRelations lists, named refs, and stable documented relations)\n- Type lookup by id equals lookup by name (type/5 == type/ground)\n\nAdd pagination 'List page 2 honours offset and next/previous contract' request\nand move the shared list envelope assertions into a pagination folder-level test\nscript (DRY), so each list request asserts only its unique checks.\n\nAdd errors 'Unknown type name returns 404' as a second negative case.\n\nCo-authored-by: Kiro Agent <244629292+kiro-agent@users.noreply.github.com>",
+          "timestamp": "2026-10-30T08:25:47+08:00",
+          "tree_id": "d166432e3b98c7e927ff64e8cc2cb30e14a9814d",
+          "url": "https://github.com/eltonmkw/pokeapi-postman-ci/commit/4c1ee326c0e45ee60abb8735df16c96705926e6d"
+        },
+        "date": 1793319996750,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Failed assertions",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Failed requests",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Avg response time",
+            "value": 62,
             "unit": "ms"
           }
         ]
