@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793320475014,
+  "lastUpdate": 1793320589155,
   "repoUrl": "https://github.com/eltonmkw/pokeapi-postman-ci",
   "entries": {
     "PokéAPI collection trend": [
@@ -428,6 +428,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "Avg response time",
             "value": 57,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "245459735+kiro-agent[bot]@users.noreply.github.com",
+            "name": "kiro-agent[bot]",
+            "username": "kiro-agent[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0cb6d3487237b446980c47b6eb77b3dff9d3eee7",
+          "message": "Add ability and unnamed-list (evolution-chain) test coverage (#15)\n\nCo-authored-by: Kiro Agent <244629292+kiro-agent@users.noreply.github.com>",
+          "timestamp": "2026-10-30T08:36:08+08:00",
+          "tree_id": "be180b7cd11c5e1f801cca97dadf6df94147e005",
+          "url": "https://github.com/eltonmkw/pokeapi-postman-ci/commit/0cb6d3487237b446980c47b6eb77b3dff9d3eee7"
+        },
+        "date": 1793320588448,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Failed assertions",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Failed requests",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Avg response time",
+            "value": 44,
             "unit": "ms"
           }
         ]
