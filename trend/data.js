@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793317915676,
+  "lastUpdate": 1793318472208,
   "repoUrl": "https://github.com/eltonmkw/pokeapi-postman-ci",
   "entries": {
     "PokéAPI collection trend": [
@@ -233,6 +233,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "Avg response time",
             "value": 65,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "eltonmkw@gmail.com",
+            "name": "Elton Mah",
+            "username": "eltonmkw"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "06c6d34dda437dabc3ee9203b3db1521eb5126dc",
+          "message": "Merge pull request #10 from eltonmkw/fix-trend-verdict-and-fork-guard\n\nFix trend-summary verdict and guard check-run step for fork PRs",
+          "timestamp": "2026-10-30T08:00:51+08:00",
+          "tree_id": "9dfd68789624543bcee33a8de38ca1653737cf6c",
+          "url": "https://github.com/eltonmkw/pokeapi-postman-ci/commit/06c6d34dda437dabc3ee9203b3db1521eb5126dc"
+        },
+        "date": 1793318471621,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Failed assertions",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Failed requests",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Avg response time",
+            "value": 121,
             "unit": "ms"
           }
         ]
