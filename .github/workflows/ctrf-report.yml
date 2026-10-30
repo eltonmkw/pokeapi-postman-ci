@@ -1,0 +1,122 @@
+name: CTRF Report
+
+# Reporter 2 of this repo's reporting matrix: CTRF (Common Test Report Format)
+# published with the ctrf-io/github-test-reporter action.
+#
+# ISOLATION: this workflow is fully self-contained so it can be enabled,
+# disabled, or deleted independently of postman-ci.yml and any other reporter.
+# It runs its own Newman execution that emits ONLY the CTRF JSON into a
+# reporter-specific directory (reports/ctrf/), so it never reads, writes, or
+# races against the files, Pages deploy, or trend history owned by postman-ci.yml.
+#
+# Triggers mirror the pre-merge / post-merge gates of postman-ci.yml but add no
+# schedule, to keep extra request volume off the live public PokéAPI.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Minimal token scope. The CTRF action needs:
+#  - contents: read        -> checkout
+#  - checks: write         -> optional status check published by the action
+#  - pull-requests: write  -> PR comment on pull_request events
+# No pages / id-token here: this workflow never deploys Pages.
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+# Keep CTRF runs from queuing on top of each other per ref, but use a group
+# that is DISTINCT from postman-ci.yml's "pages" group so the two workflows
+# never block one another.
+concurrency:
+  group: ctrf-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ctrf:
+    name: Run PokéAPI collection and publish CTRF report
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned by commit SHA (v4.2.2) for reproducibility.
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # Pinned by commit SHA (v4.1.0). Node 22, matching postman-ci.yml.
+      - name: Set up Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '22'
+
+      # Install the pinned Newman and the CTRF reporter globally, matching this
+      # repo's established global-install convention (there is no package.json /
+      # lockfile). newman-reporter-ctrf-json converts the Newman run into a
+      # CTRF-compliant JSON report that the github-test-reporter action consumes.
+      - name: Install Newman + CTRF reporter (pinned)
+        run: npm install -g newman@6.2.3 newman-reporter-ctrf-json@0.2.0
+
+      # Run the committed collection and emit ONLY the CTRF JSON, into the
+      # reporter-specific reports/ctrf/ directory so nothing collides with the
+      # reports/pokeapi.* files that postman-ci.yml produces.
+      # 'set -o pipefail' makes the pipeline return Newman's exit code (not
+      # tee's), so a failed request or assertion still fails THIS step and the
+      # job. The CTRF publish + upload steps below use if: always() so they run
+      # even after this step fails.
+      - name: Run collection (CTRF JSON)
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p reports/ctrf
+          newman run postman/pokeapi.postman_collection.json \
+            --reporters cli,ctrf-json \
+            --reporter-ctrf-json-output-dir reports/ctrf \
+            --reporter-ctrf-json-output-file pokeapi.ctrf.json \
+            --reporter-ctrf-json-test-type api \
+            --reporter-ctrf-json-app-name pokeapi-postman-ci \
+            | tee reports/ctrf/pokeapi.ctrf.cli.txt
+
+      # Publish the CTRF report to the Actions job summary, with multi-run
+      # insights (fail-rate + flaky-rate) and a status check. if: always() so a
+      # failing test run is still reported. exit-on-empty / exit-on-no-files
+      # make a missing or empty CTRF report fail this step (detects a broken
+      # reporter), while exit-on-fail is left false so this step does NOT become
+      # a second gate: the authoritative pass/fail is the Run collection step.
+      # fetch-previous-results + GITHUB_TOKEN let the action build fail/flaky
+      # history across runs (history accrues over time; first runs show none).
+      # Pinned by commit SHA (v1.3.2).
+      - name: Publish CTRF report
+        if: always()
+        uses: ctrf-io/github-test-reporter@dbb08957b5b2af918b39136ab2c5532002c7649b # v1.3.2
+        with:
+          report-path: 'reports/ctrf/*.json'
+          summary-report: true
+          fail-rate-report: true
+          flaky-rate-report: true
+          status-check: true
+          status-check-name: 'CTRF test results'
+          pull-request-report: true
+          update-comment: true
+          comment-tag: 'ctrf-${{ github.workflow }}'
+          fetch-previous-results: true
+          upload-artifact: true
+          artifact-name: 'pokeapi-ctrf-processed'
+          exit-on-empty: true
+          exit-on-no-files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Also upload the raw CTRF JSON (and its CLI log) as a plain artifact so it
+      # can be downloaded and inspected independently of the action's processed
+      # artifact. if: always() so it is captured even on a failing run.
+      # Pinned by commit SHA (v4.4.3).
+      - name: Upload raw CTRF report
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: pokeapi-ctrf-report
+          path: |
+            reports/ctrf/pokeapi.ctrf.json
+            reports/ctrf/pokeapi.ctrf.cli.txt
+          if-no-files-found: warn

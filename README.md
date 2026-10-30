@@ -63,3 +63,4 @@ must be exported and committed to reach CI.
 - [API testing](docs/api-testing.md): conventions and adding tests.
 - [Troubleshooting](docs/troubleshooting.md): reading reports and investigating failures.
 - [QA playbook](AGENTS.md): scenario planning, assertions, and flaky-run triage.
+- [CTRF reporting](docs/reporting/ctrf.md): CTRF GitHub Test Reporter integration (optional, isolated workflow).
