@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793320589155,
+  "lastUpdate": 1793321257683,
   "repoUrl": "https://github.com/eltonmkw/pokeapi-postman-ci",
   "entries": {
     "PokéAPI collection trend": [
@@ -467,6 +467,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "Avg response time",
             "value": 44,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "245459735+kiro-agent[bot]@users.noreply.github.com",
+            "name": "kiro-agent[bot]",
+            "username": "kiro-agent[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "679004ee0543c1de2a94a8342caaf7641e58bf9b",
+          "message": "refactor: serve only latest htmlextra report at Pages root (#16)\n\nCollapse the multi-page Pages site (trend landing page at /, /report/,\n/trend/, and per-run /reports/ archive) down to a single page: the deploy\njob now publishes the latest Newman htmlextra report directly as\nsite/index.html, with a minimal placeholder fallback when no report exists.\n\nRemoves the gh-pages data-store checkout, the per-run archive-on-gh-pages\nstep, and the link-chart-to-reports post-processing from the deploy job.\nThe deploy job stays gated to pushes on main. The trend data store on the\ngh-pages branch is still maintained by run-collection and is unaffected.\n\nCo-authored-by: Kiro Agent <244629292+kiro-agent@users.noreply.github.com>",
+          "timestamp": "2026-10-30T08:47:11+08:00",
+          "tree_id": "cb764cfaf7ebd762c204216b9de72e736dd7216e",
+          "url": "https://github.com/eltonmkw/pokeapi-postman-ci/commit/679004ee0543c1de2a94a8342caaf7641e58bf9b"
+        },
+        "date": 1793321257241,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Failed assertions",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Failed requests",
+            "value": 0,
+            "unit": "count"
+          },
+          {
+            "name": "Avg response time",
+            "value": 32,
             "unit": "ms"
           }
         ]
