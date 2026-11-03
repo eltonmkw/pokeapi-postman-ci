@@ -1,0 +1,12 @@
+{
+  "name": "pokeapi-postman-ci",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Postman/Newman CI for PokéAPI with trend reporting scripts",
+  "scripts": {
+    "test": "node --test test/properties/*.test.js scripts/newman-trend-metrics.test.js"
+  },
+  "devDependencies": {
+    "fast-check": "^3.23.0"
+  }
+}
