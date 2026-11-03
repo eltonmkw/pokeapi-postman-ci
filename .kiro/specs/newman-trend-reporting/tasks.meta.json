@@ -1,0 +1,240 @@
+{
+  "pbtResults": {
+    "2.3 Write property test for the Metrics_File shape, values, and zero defaults": {
+      "status": "passed",
+      "lastRunTimestamp": 1793455964951
+    },
+    "5.2 Write property test for the byte-for-byte no-op fallback": {
+      "status": "passed",
+      "lastRunTimestamp": 1793456091611
+    }
+  },
+  "executionHistory": {
+    "1. Set up the property-based test harness": [
+      {
+        "executionId": "abe68a2d-3720-4e80-a427-3c89d6650635",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793454501398
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793454793407
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455867407
+      }
+    ],
+    "3. Align the existing example-based test": [
+      {
+        "executionId": "abe68a2d-3720-4e80-a427-3c89d6650635",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793454501451
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793456292415
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793456858761
+      }
+    ],
+    "4. Checkpoint - Metrics_Extractor properties pass": [
+      {
+        "executionId": "abe68a2d-3720-4e80-a427-3c89d6650635",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793454501485
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793456863992
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793457143699
+      }
+    ],
+    "7. Record the Requirements 10–11 known gap": [
+      {
+        "executionId": "abe68a2d-3720-4e80-a427-3c89d6650635",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793454501509
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793456864554
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793457144134
+      }
+    ],
+    "8. Final checkpoint - run the whole suite and confirm all properties pass": [
+      {
+        "executionId": "abe68a2d-3720-4e80-a427-3c89d6650635",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793454501537
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793457148922
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793457928724
+      }
+    ],
+    "2.1 Write property test for the all-failures verdict rule": [
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455873241
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455978481
+      }
+    ],
+    "2.2 Write property test for run-level failure explanation row": [
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455873275
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455979050
+      }
+    ],
+    "2.3 Write property test for the Metrics_File shape, values, and zero defaults": [
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455873470
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455979836
+      }
+    ],
+    "2.4 Write property test for summary emission gated on the env var": [
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455874258
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455980500
+      }
+    ],
+    "5.1 Write property test for matched-SHA linking and fallback": [
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455874678
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455981178
+      }
+    ],
+    "2. Property tests for the Metrics_Extractor (`scripts/newman-trend-metrics.js`)": [
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455980535
+      }
+    ],
+    "5.2 Write property test for the byte-for-byte no-op fallback": [
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455981775
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793456285399
+      }
+    ],
+    "5.3 Write property test for rewriting every handler occurrence": [
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455982647
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793456285497
+      }
+    ],
+    "6.1 Write property test for exit 2 on invalid invocation (both scripts)": [
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455983328
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793456286571
+      }
+    ],
+    "6.2 Write property test for the Metrics_Extractor on an unreadable/unparseable report": [
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455983828
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793456287346
+      }
+    ],
+    "6.3 Write property test for the Chart_Linker on an unreadable chart": [
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793455984465
+      },
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793456287921
+      }
+    ],
+    "5. Property tests for the Chart_Linker (`scripts/link-chart-to-reports.js`)": [
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793456285522
+      }
+    ],
+    "6. Property tests for the CLI exit-code contracts of both scripts": [
+      {
+        "executionId": "66f04c7a-121c-4b83-bb96-f20582480b6d",
+        "chatSessionId": "sess_a0008d43-b61b-4d19-b1b2-48329f28293b",
+        "timestamp": 1793456287952
+      }
+    ]
+  }
+}

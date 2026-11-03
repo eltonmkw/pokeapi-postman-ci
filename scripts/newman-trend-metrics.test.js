@@ -13,6 +13,8 @@
  */
 'use strict';
 
+// Example-based complement to Property 1 (test/properties/metrics-verdict.test.js): verdict is fail iff some failure category is non-zero.
+
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');

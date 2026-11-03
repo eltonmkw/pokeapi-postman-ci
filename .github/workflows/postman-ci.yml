@@ -52,6 +52,12 @@ jobs:
         with:
           node-version: '22'
 
+      # Property-based tests for the trend-reporting scripts. Synthetic inputs
+      # only, no network calls to PokéAPI.
+      - name: Install test dependencies
+        run: npm ci
+      - name: Run trend-reporting property tests
+        run: npm test
       # Pin the exact Newman version so CI is reproducible. Newman is Postman's
       # officially maintained command-line Collection Runner, used here because
       # it emits the JUnit XML + JSON reports the downstream steps consume.
